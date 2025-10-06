@@ -1,0 +1,50 @@
+name: laptopshop
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD-root}
+      MYSQL_USER: laptopshop
+      MYSQL_PASSWORD: laptopshop
+      MYSQL_DATABASE: laptopshop
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+    networks:
+      - laptopshop
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      # - ./laptopshop.sql:/docker-entrypoint-initdb.d/laptopshop.sql
+
+  api-server:
+    build:
+      context: ./api-server
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/laptopshop?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=laptopshop
+      - SPRING_DATASOURCE_PASSWORD=laptopshop
+    depends_on:
+      - mysql
+    networks:
+      - laptopshop
+
+  react-client:
+    build:
+      context: ./react-client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-server
+    networks:
+      - laptopshop
+
+networks:
+  laptopshop:
+  
