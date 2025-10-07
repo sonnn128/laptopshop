@@ -17,7 +17,7 @@ services:
       - laptopshop
     volumes:
       - ./data/mysql:/var/lib/mysql
-      # - ./laptopshop.sql:/docker-entrypoint-initdb.d/laptopshop.sql
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql
 
   api-server:
     build:
@@ -26,17 +26,18 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/laptopshop?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/laptopshop
       - SPRING_DATASOURCE_USERNAME=laptopshop
       - SPRING_DATASOURCE_PASSWORD=laptopshop
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - laptopshop
 
   react-client:
     build:
-      context: ./react-client
+      context: ./ui
       dockerfile: Dockerfile
     ports:
       - "3000:80"
