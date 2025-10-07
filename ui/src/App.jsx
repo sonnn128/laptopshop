@@ -5,6 +5,7 @@ import Navbar from './components/layout/Navbar.jsx';
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { CartProvider } from './contexts/CartContext.jsx';
 
 // Pages
 import HomePage from './pages/HomePage.jsx';
@@ -140,9 +141,11 @@ function App() {
   return (
     <ConfigProvider theme={theme}>
       <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <CartProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </CartProvider>
       </AuthProvider>
     </ConfigProvider>
   );

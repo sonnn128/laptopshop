@@ -27,26 +27,57 @@ const Orders = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   // Mock data
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (page = 0, size = 10, status = 'ALL') => {
     setLoading(true);
     try {
-      const response = await orderService.getAll();
-      // Handle Page object response
-      const data = response.data || response;
-      if (data && data.content) {
-        // It's a Page object
-        setOrders(Array.isArray(data.content) ? data.content : []);
-      } else if (Array.isArray(data)) {
-        // It's a direct array
-        setOrders(data);
+      let response;
+      if (status === 'ALL') {
+        response = await orderService.getAll({ page, size });
       } else {
+        response = await orderService.getByStatus(status, { page, size });
+      }
+      
+      console.log('Orders API response:', response);
+      
+      // Handle Page object response
+      if (response && response.content) {
+        // It's a Page object
+        console.log('Page content:', response.content);
+        setOrders(Array.isArray(response.content) ? response.content : []);
+        setPagination(prev => ({
+          ...prev,
+          current: page + 1,
+          total: response.totalElements || 0
+        }));
+      } else if (Array.isArray(response)) {
+        // It's a direct array
+        console.log('Direct array:', response);
+        setOrders(response);
+        setPagination(prev => ({
+          ...prev,
+          current: page + 1,
+          total: response.length
+        }));
+      } else {
+        console.log('No data found');
         setOrders([]);
+        setPagination(prev => ({
+          ...prev,
+          current: page + 1,
+          total: 0
+        }));
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -64,12 +95,22 @@ const Orders = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      message.success(`Order status updated to ${newStatus}`);
-      fetchOrders();
+      await orderService.updateStatus(orderId, newStatus);
+      message.success('Order status updated successfully');
+      fetchOrders(pagination.current - 1, pagination.pageSize, statusFilter);
     } catch (error) {
       console.error('Failed to update order status:', error);
       message.error('Failed to update order status');
     }
+  };
+
+  const handleTableChange = (pagination) => {
+    fetchOrders(pagination.current - 1, pagination.pageSize, statusFilter);
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    fetchOrders(0, pagination.pageSize, value);
   };
 
   const getStatusColor = (status) => {
@@ -84,10 +125,10 @@ const Orders = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'pending': return <Badge status="warning" text="Pending" />;
-      case 'processing': return <Badge status="processing" text="Processing" />;
-      case 'completed': return <Badge status="success" text="Completed" />;
-      case 'cancelled': return <Badge status="error" text="Cancelled" />;
+      case 'PENDING': return <Badge status="warning" text="Pending" />;
+      case 'PROCESSING': return <Badge status="processing" text="Processing" />;
+      case 'COMPLETED': return <Badge status="success" text="Completed" />;
+      case 'CANCELLED': return <Badge status="error" text="Cancelled" />;
       default: return <Badge status="default" text={status} />;
     }
   };
@@ -110,9 +151,9 @@ const Orders = () => {
     },
     {
       title: 'Total Amount',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
-      render: (amount) => `$${amount.toFixed(2)}`,
+      dataIndex: 'totalPrice',
+      key: 'totalPrice',
+      render: (amount) => amount ? `$${amount.toFixed(2)}` : '$0.00',
     },
     {
       title: 'Status',
@@ -137,12 +178,12 @@ const Orders = () => {
           >
             View
           </Button>
-          {record.status === 'pending' && (
+          {record.status === 'PENDING' && (
             <>
               <Button 
                 type="primary" 
                 icon={<CheckOutlined />} 
-                onClick={() => handleStatusChange(record.id, 'processing')}
+                onClick={() => handleStatusChange(record.id, 'PROCESSING')}
                 style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               >
                 Process
@@ -150,18 +191,18 @@ const Orders = () => {
               <Button 
                 danger
                 icon={<CloseOutlined />} 
-                onClick={() => handleStatusChange(record.id, 'cancelled')}
+                onClick={() => handleStatusChange(record.id, 'CANCELLED')}
               >
                 Cancel
               </Button>
             </>
           )}
-          {record.status === 'processing' && (
+          {record.status === 'PROCESSING' && (
             <Button 
               type="primary" 
               icon={<CheckOutlined />} 
-              onClick={() => handleStatusChange(record.id, 'completed')}
-              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              onClick={() => handleStatusChange(record.id, 'COMPLETED')}
+              style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
             >
               Complete
             </Button>
@@ -181,6 +222,18 @@ const Orders = () => {
           marginBottom: 16 
         }}>
           <Title level={2} style={{ margin: 0 }}>Orders Management</Title>
+          <Select
+            value={statusFilter}
+            onChange={handleStatusFilterChange}
+            style={{ width: 150 }}
+            placeholder="Filter by status"
+          >
+            <Option value="ALL">All Orders</Option>
+            <Option value="PENDING">Pending</Option>
+            <Option value="PROCESSING">Processing</Option>
+            <Option value="COMPLETED">Completed</Option>
+            <Option value="CANCELLED">Cancelled</Option>
+          </Select>
         </div>
         
         <Table
@@ -189,9 +242,14 @@ const Orders = () => {
           loading={loading}
           rowKey="id"
           pagination={{
-            pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
+            onChange: handleTableChange,
+            onShowSizeChange: handleTableChange,
           }}
         />
       </Card>

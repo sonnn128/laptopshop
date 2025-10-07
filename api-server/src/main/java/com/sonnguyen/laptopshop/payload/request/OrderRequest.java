@@ -8,6 +8,7 @@ import java.util.List;
 
 @Data
 public class OrderRequest {
+
     @NotEmpty(message = "Receiver name is required")
     private String receiverName;
 

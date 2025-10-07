@@ -33,14 +33,15 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeHttpRequest ->
                         authorizeHttpRequest
-                                .anyRequest()
-                                .permitAll()
+                                .requestMatchers("/api/v1/auth/**").permitAll()
+                                .requestMatchers("/api/v1/products/**").permitAll()
+                                .requestMatchers("/api/v1/categories/**").permitAll()
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManagement ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-                // Temporarily disable all filters to test
-                // .addFilterBefore(exceptionHandlerFilter, UsernamePasswordAuthenticationFilter.class);
-                // .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(exceptionHandlerFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

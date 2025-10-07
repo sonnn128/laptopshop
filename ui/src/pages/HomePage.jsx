@@ -1,11 +1,17 @@
-import React from 'react';
-import { Card, Typography, Button, Row, Col } from 'antd';
-import { Link } from 'react-router-dom';
-import { LaptopOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Typography, Button, Row, Col, Spin, message } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
+import { LaptopOutlined, ShoppingCartOutlined, EyeOutlined } from '@ant-design/icons';
+import AddToCartButton from '../components/AddToCartButton.jsx';
+import api from '../config/api.js';
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 
 const HomePage = () => {
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
   const features = [
     {
       title: 'Latest Laptops',
@@ -23,6 +29,39 @@ const HomePage = () => {
       icon: <LaptopOutlined style={{ fontSize: '48px', color: '#fa8c16' }} />,
     },
   ];
+
+  useEffect(() => {
+    loadFeaturedProducts();
+  }, []);
+
+  const loadFeaturedProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/products', {
+        params: {
+          page: 0,
+          size: 6,
+          sort: 'id,desc'
+        }
+      });
+      const data = response.data.data || response.data;
+      
+      if (Array.isArray(data)) {
+        setFeaturedProducts(data);
+      } else if (data.content) {
+        setFeaturedProducts(data.content);
+      }
+    } catch (error) {
+      console.error('Error loading featured products:', error);
+      message.error('Failed to load featured products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProductClick = (productId) => {
+    navigate(`/products/${productId}`);
+  };
 
   return (
     <div>
@@ -70,13 +109,90 @@ const HomePage = () => {
         ))}
       </Row>
 
+      {/* Featured Products Section */}
+      <div style={{ marginBottom: '60px' }}>
+        <Title level={2} style={{ textAlign: 'center', marginBottom: '40px' }}>
+          Featured Products
+        </Title>
+        
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '50px' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: '16px' }}>Loading featured products...</div>
+          </div>
+        ) : (
+          <Row gutter={[16, 16]}>
+            {featuredProducts.map(product => (
+              <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
+                <Card
+                  hoverable
+                  cover={
+                    <img
+                      alt={product.name}
+                      src={product.image || 'https://via.placeholder.com/300x200?text=No+Image'}
+                      style={{ height: 200, objectFit: 'cover' }}
+                      onClick={() => handleProductClick(product.id)}
+                    />
+                  }
+                  actions={[
+                    <Button 
+                      type="text" 
+                      icon={<EyeOutlined />}
+                      onClick={() => handleProductClick(product.id)}
+                    >
+                      View Details
+                    </Button>,
+                    <AddToCartButton 
+                      product={product} 
+                      size="small"
+                      showQuantity={false}
+                    />
+                  ]}
+                >
+                  <Card.Meta
+                    title={
+                      <div 
+                        onClick={() => handleProductClick(product.id)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {product.name}
+                      </div>
+                    }
+                    description={
+                      <div>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                            ${product.price?.toLocaleString()}
+                          </Text>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          {product.factory && `by ${product.factory}`}
+                        </div>
+                      </div>
+                    }
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
+
+        {!loading && featuredProducts.length > 0 && (
+          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+            <Button type="primary" size="large" onClick={() => navigate('/products')}>
+              View All Products
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* CTA Section */}
       <Card style={{ textAlign: 'center', background: '#f8f9fa' }}>
         <Title level={2}>Ready to Find Your Perfect Laptop?</Title>
         <Paragraph style={{ fontSize: '1.1rem', marginBottom: '32px' }}>
           Browse our extensive collection of laptops from top brands
         </Paragraph>
-        <Button type="primary" size="large" href="/products">
+        <Button type="primary" size="large" onClick={() => navigate('/products')}>
           Shop Now
         </Button>
       </Card>

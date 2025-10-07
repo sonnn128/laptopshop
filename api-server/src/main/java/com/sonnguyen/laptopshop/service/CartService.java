@@ -29,17 +29,23 @@ public class CartService {
         this.userRepository = userRepository;
     }
 
-    public CartResponse getCartByUserId(String userId) {
-        Optional<Cart> cartOpt = cartRepository.findByUserId(UUID.fromString(userId));
+    public CartResponse getCartByUserId(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            return null;
+        }
+        Optional<Cart> cartOpt = cartRepository.findByUser(user);
         if (cartOpt.isPresent()) {
             return ModelMapper.toCartResponse(cartOpt.get());
         }
         return null;
     }
 
-    public CartResponse addItemToCart(String userId, CartItemRequest request) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public CartResponse addItemToCart(String username, CartItemRequest request) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
@@ -75,9 +81,11 @@ public class CartService {
         return ModelMapper.toCartResponse(cart);
     }
 
-    public CartResponse updateCartItem(String userId, Long cartDetailId, Long quantity) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public CartResponse updateCartItem(String username, Long cartDetailId, Long quantity) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
@@ -103,9 +111,11 @@ public class CartService {
         return ModelMapper.toCartResponse(cart);
     }
 
-    public CartResponse removeItemFromCart(String userId, Long cartDetailId) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public CartResponse removeItemFromCart(String username, Long cartDetailId) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
@@ -122,9 +132,11 @@ public class CartService {
         return ModelMapper.toCartResponse(cart);
     }
 
-    public void clearCart(String userId) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void clearCart(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));

@@ -32,9 +32,11 @@ public class OrderService {
         this.userRepository = userRepository;
     }
 
-    public OrderResponse createOrder(String userId, OrderRequest request) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public OrderResponse createOrder(String username, OrderRequest request) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         Order order = new Order();
         order.setUser(user);
@@ -76,17 +78,21 @@ public class OrderService {
         return ModelMapper.toOrderResponse(finalOrder);
     }
 
-    public Page<OrderResponse> getOrdersByUserId(String userId, Pageable pageable) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public Page<OrderResponse> getOrdersByUserId(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         // Convert to page manually since we don't have a pageable method
         return Page.empty(pageable);
     }
 
-    public List<OrderResponse> getUserOrders(String userId) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public List<OrderResponse> getUserOrders(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         List<Order> orders = orderRepository.findByUser(user);
         return orders.stream()
@@ -104,6 +110,13 @@ public class OrderService {
         return orders.map(ModelMapper::toOrderResponse);
     }
 
+    public List<OrderResponse> getAllOrdersWithoutPagination() {
+        List<Order> orders = orderRepository.findAll();
+        return orders.stream()
+                .map(ModelMapper::toOrderResponse)
+                .toList();
+    }
+
     public Page<OrderResponse> getOrdersByStatus(String status, Pageable pageable) {
         Page<Order> orders = orderRepository.findByStatus(status, pageable);
         return orders.map(ModelMapper::toOrderResponse);
@@ -118,9 +131,11 @@ public class OrderService {
                 .map(ModelMapper::toOrderResponse);
     }
 
-    public List<OrderResponse> getUserOrdersByStatus(String userId, String status) {
-        User user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public List<OrderResponse> getUserOrdersByStatus(String username, String status) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
         List<Order> orders = orderRepository.findByUserAndStatus(user, status);
         return orders.stream()

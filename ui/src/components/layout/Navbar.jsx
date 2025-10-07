@@ -13,6 +13,7 @@ import {
   DashboardOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import CartIcon from '../CartIcon.jsx';
 
 const { Header } = Layout;
 
@@ -20,7 +21,6 @@ const Navbar = () => {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [cartItemsCount] = useState(0);
 
   const handleLogout = () => {
     logout();
@@ -114,14 +114,7 @@ const Navbar = () => {
       />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <Badge count={cartItemsCount} size="small">
-          <Button
-            type="text"
-            icon={<ShoppingCartOutlined />}
-            style={{ color: 'white' }}
-            onClick={() => navigate('/cart')}
-          />
-        </Badge>
+        <CartIcon />
 
         {user ? (
           <>

@@ -62,6 +62,14 @@ public class AuthController {
 
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body(
+                    ApiResponse.builder()
+                            .success(false)
+                            .message("Authentication required")
+                            .build()
+            );
+        }
         User user = authService.getCurrentUser(authentication.getName());
         return ResponseEntity.ok().body(
                 ApiResponse.builder()
@@ -73,6 +81,14 @@ public class AuthController {
 
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody RegisterRequest updateRequest, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body(
+                    ApiResponse.builder()
+                            .success(false)
+                            .message("Authentication required")
+                            .build()
+            );
+        }
         User user = authService.updateProfile(authentication.getName(), updateRequest);
         return ResponseEntity.ok().body(
                 ApiResponse.builder()

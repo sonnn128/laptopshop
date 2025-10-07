@@ -49,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         jwt = authHeader.substring(7);
         username = jwtService.extractUsername(jwt);
-        if(username != null && SecurityContextHolder.getContext().getAuthentication() == null){
+        if(username != null){
             UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(username);
             if(jwtService.isTokenValid(jwt, userDetails)){
                 // Extract authorities from token instead of userDetails
@@ -61,7 +61,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                log.info("Authentication set for user: {}", username);
+            } else {
+                log.warn("Invalid token for user: {}", username);
             }
+        } else {
+            log.warn("Could not extract username from token");
         }
         filterChain.doFilter(request, response);
     }
@@ -74,7 +79,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                requestURI.startsWith("/webjars") ||
                requestURI.equals("/swagger-ui.html") ||
                requestURI.equals("/error") ||
-               requestURI.startsWith("/api/v1/auth/");
+               requestURI.equals("/api/v1/auth/login") ||
+               requestURI.equals("/api/v1/auth/register");
     }
     
     private boolean isPublicGetEndpoint(String requestURI, String method) {

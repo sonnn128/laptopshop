@@ -30,15 +30,21 @@ public class OrderController {
     public ResponseEntity<OrderResponse> createOrder(
             @Valid @RequestBody OrderRequest request,
             Authentication authentication) {
-        String userId = authentication.getName();
-        OrderResponse order = orderService.createOrder(userId, request);
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String username = authentication.getName();
+        OrderResponse order = orderService.createOrder(username, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
     @GetMapping("/my-orders")
     public ResponseEntity<List<OrderResponse>> getMyOrders(Authentication authentication) {
-        String userId = authentication.getName();
-        List<OrderResponse> orders = orderService.getUserOrders(userId);
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String username = authentication.getName();
+        List<OrderResponse> orders = orderService.getUserOrders(username);
         return ResponseEntity.ok(orders);
     }
 
@@ -46,8 +52,11 @@ public class OrderController {
     public ResponseEntity<List<OrderResponse>> getMyOrdersByStatus(
             @PathVariable String status,
             Authentication authentication) {
-        String userId = authentication.getName();
-        List<OrderResponse> orders = orderService.getUserOrdersByStatus(userId, status);
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        String username = authentication.getName();
+        List<OrderResponse> orders = orderService.getUserOrdersByStatus(username, status);
         return ResponseEntity.ok(orders);
     }
 
@@ -62,7 +71,11 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<OrderResponse>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
         
         Pageable pageable = PageRequest.of(page, size);
         Page<OrderResponse> orders = orderService.getAllOrders(pageable);
@@ -74,10 +87,25 @@ public class OrderController {
     public ResponseEntity<Page<OrderResponse>> getOrdersByStatus(
             @PathVariable String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
         
         Pageable pageable = PageRequest.of(page, size);
         Page<OrderResponse> orders = orderService.getOrdersByStatus(status, pageable);
+        return ResponseEntity.ok(orders);
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<OrderResponse>> getAllOrdersWithoutPagination(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        List<OrderResponse> orders = orderService.getAllOrdersWithoutPagination();
         return ResponseEntity.ok(orders);
     }
 
@@ -85,7 +113,12 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable Long id,
-            @RequestParam String status) {
+            @RequestParam String status,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
         return orderService.updateOrderStatus(id, status)
                 .map(order -> ResponseEntity.ok(order))
                 .orElse(ResponseEntity.notFound().build());

@@ -118,7 +118,7 @@ export const categoryService = {
 
 // Orders API
 export const orderService = {
-  // Get all orders
+  // Get all orders with pagination
   getAll: async (params = {}) => {
     try {
       const response = await api.get('/orders', { params });
@@ -129,10 +129,32 @@ export const orderService = {
     }
   },
 
+  // Get all orders without pagination
+  getAllWithoutPagination: async () => {
+    try {
+      const response = await api.get('/orders/all');
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  // Get orders by status
+  getByStatus: async (status, params = {}) => {
+    try {
+      const response = await api.get(`/orders/status/${status}`, { params });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
   // Get order by ID
   getById: async (id) => {
     try {
-      const response = await api.get(`/admin/orders/${id}`);
+      const response = await api.get(`/orders/${id}`);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
@@ -143,7 +165,7 @@ export const orderService = {
   // Update order status
   updateStatus: async (id, status) => {
     try {
-      const response = await api.patch(`/admin/orders/${id}/status`, { status });
+      const response = await api.put(`/orders/${id}/status?status=${status}`);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
