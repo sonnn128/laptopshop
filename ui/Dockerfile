@@ -1,31 +1,28 @@
-# Build stage
-FROM node:18-alpine as build
+### STAGE 1: Build ###
+FROM node:21.7.3 AS build
 
+#### make the 'app' folder the current working directory
 WORKDIR /app
 
-# Copy package files
+#### copy both 'package.json' and 'package-lock.json' (if available)
 COPY package*.json ./
 
-# Install dependencies
+#### install project dependencies
 RUN npm install
 
-# Copy source code
+#### copy things
 COPY . .
 
-# Build the application
+#### generate build --prod
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+### STAGE 2: Run ###
+FROM nginx:1.27-alpine
 
-# Copy built files from build stage
+#### copy nginx conf
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+
+#### copy artifact build from the 'build environment'
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Expose port
-EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

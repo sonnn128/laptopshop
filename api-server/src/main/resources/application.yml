@@ -9,9 +9,9 @@ spring:
       enabled: ALWAYS
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/laptopshop}
-    username: ${SPRING_DATASOURCE_USERNAME:laptopshop}
-    password: ${SPRING_DATASOURCE_PASSWORD:laptopshop}
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:laptopshop}
+    username: ${MYSQL_USER:laptopshop}
+    password: ${MYSQL_PASSWORD:laptopshop}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
     hikari:
@@ -26,7 +26,6 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
-
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
