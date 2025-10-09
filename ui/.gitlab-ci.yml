@@ -1,0 +1,70 @@
+# backend pipeline, 4 registry variables, 1 port
+variables:
+  # registry.nnson128.io.vn/elroy/shoeshop:staging_0.0.11_4b1d2b6b
+  DOCKER_IMAGE: ${REGISTRY_URL}/${REGISTRY_PROJECT}/${CI_PROJECT_NAME}:${CI_COMMIT_TAG}_${CI_COMMIT_SHORT_SHA}
+  DOCKER_CONTAINER: ${CI_PROJECT_NAME}
+
+stages:
+  - build
+  - push
+  - deploy
+  - showlog
+
+build:
+  stage: build
+  variables:
+    GIT_STRATEGY: clone
+  before_script:
+    - docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
+  script:
+    - docker build -t ${DOCKER_IMAGE} .
+  after_script:
+    - docker logout ${REGISTRY_URL}
+  tags: 
+    - laptopshop-runner-devops-shell
+  only:
+    - tags
+
+push:
+  stage: push
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
+  script:
+    - docker push ${DOCKER_IMAGE}
+  after_script:
+    - docker logout ${REGISTRY_URL}
+  tags: 
+    - laptopshop-runner-devops-shell
+  only:
+    - tags
+
+deploy:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
+  script:
+    - docker pull ${DOCKER_IMAGE}
+    - docker rm -f ${DOCKER_CONTAINER} || echo "No existing container to remove"
+    - docker run --name ${DOCKER_CONTAINER} -dp ${PROJECT_BACKEND_PORT}:${PROJECT_BACKEND_PORT} ${DOCKER_IMAGE}
+  tags:
+    - laptopshop-runner-devops-shell
+  only:
+    - tags
+
+showlog:
+  stage: showlog
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - sleep 20
+    - docker logs ${DOCKER_CONTAINER}
+  tags:
+    - online-shop-runner-dev-shell
+  only:
+    - tags
+  when: manual
+
