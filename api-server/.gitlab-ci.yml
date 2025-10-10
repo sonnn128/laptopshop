@@ -1,11 +1,13 @@
-# backend pipeline, 4 registry variables, 1 port
+# 1: PROJECT_BACKEND_PORT
+# 3: SONAR_PROJECT_KEY, SONAR_HOST_URL, SONAR_TOKEN
+# 4: REGISTRY_URL, REGISTRY_PROJECT, REGISTRY_USER, REGISTRY_PASSWORD
 variables:
   # registry.nnson128.io.vn/elroy/shoeshop:staging_0.0.11_4b1d2b6b
   DOCKER_IMAGE: ${REGISTRY_URL}/${REGISTRY_PROJECT}/${CI_PROJECT_NAME}:${CI_COMMIT_TAG}_${CI_COMMIT_SHORT_SHA}
   DOCKER_CONTAINER: ${CI_PROJECT_NAME}
-
 stages:
   - build
+  - sonarqube-scan
   - push
   - deploy
   - showlog
@@ -21,10 +23,28 @@ build:
   after_script:
     - docker logout ${REGISTRY_URL}
   tags: 
-    - laptopshop-runner-devops-shell
+    - online-shop-runner-build-shell
   only:
     - tags
 
+
+sonarqube-scan:
+  stage: sonarqube-scan
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" 
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - echo "Running SonarQube analysis..."
+    - sonar-scanner -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.sources=. -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.token=${SONAR_TOKEN}
+  tags: 
+    - online-shop-runner-build-shell
+  only:
+    - tags
+  allow_failure: true
+  
 push:
   stage: push
   variables:
@@ -36,7 +56,7 @@ push:
   after_script:
     - docker logout ${REGISTRY_URL}
   tags: 
-    - laptopshop-runner-devops-shell
+    - online-shop-runner-build-shell
   only:
     - tags
 
@@ -51,7 +71,7 @@ deploy:
     - docker rm -f ${DOCKER_CONTAINER} || echo "No existing container to remove"
     - docker run --name ${DOCKER_CONTAINER} -dp ${PROJECT_BACKEND_PORT}:${PROJECT_BACKEND_PORT} ${DOCKER_IMAGE}
   tags:
-    - laptopshop-runner-devops-shell
+    - online-shop-runner-dev-shell
   only:
     - tags
 
@@ -67,4 +87,3 @@ showlog:
   only:
     - tags
   when: manual
-
