@@ -83,7 +83,7 @@ trivy-fs-scan:
     expire_in: 1 day
   allow_failure: true
 
-# ================= Security Scan Image (2 jobs song song) =================
+# ================= Security Scan Image =================
 trivy-clean-image:
   stage: security-scan-image
   variables:
