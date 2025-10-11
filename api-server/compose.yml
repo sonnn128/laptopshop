@@ -18,8 +18,9 @@ stages:
 # ================= Backup =================
 backup:
   stage: backup
-  variables:
-    GIT_STRATEGY: none
+  image: docker:24-dind
+  services:
+    - docker:24-dind
   script:
     - mkdir -p backup
     - docker cp ${DOCKER_CONTAINER}:/app/data backup/ || echo "No container to backup"
@@ -35,6 +36,9 @@ backup:
 # ================= Build Docker Image =================
 build:
   stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
   before_script:
     - docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
   script:
@@ -51,45 +55,48 @@ sonar-scan:
   stage: test-source-code
   image: maven:3.8-openjdk-17
   script:
-    - >
-      mvn clean verify sonar:sonar
-      -Dsonar.projectKey=${SONAR_PROJECT_KEY}
-      -Dsonar.host.url=${SONAR_HOST_URL}
-      -Dsonar.token=${SONAR_TOKEN}
-      -Dsonar.java.binaries=target/classes
+    - mvn clean verify sonar:sonar \
+        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+        -Dsonar.host.url=${SONAR_HOST_URL} \
+        -Dsonar.token=${SONAR_TOKEN} \
+        -Dsonar.java.binaries=target/classes
   tags:
     - laptopshop-runner-devops-shell
   only:
     - tags
   allow_failure: true
 
-
 trivy-fs-scan:
   stage: test-source-code
+  image: docker:24-dind
+  services:
+    - docker:24-dind
   variables:
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
     GIT_STRATEGY: none
   script:
-    - docker run --rm -v $PWD:/app aquasec/trivy:latest fs /app --severity HIGH,CRITICAL --format template --template "@/contrib/html.tpl" --output /app/$TRIVYFS_REPORT.html
-
+    - docker run --rm -v $PWD:/app aquasec/trivy:latest fs /app \
+      --severity HIGH,CRITICAL --format template --template "@/contrib/html.tpl" \
+      --output /app/$TRIVYFS_REPORT.html
   tags:
     - laptopshop-runner-devops-shell
   only:
     - tags
   artifacts:
     paths:
-      - ${TRIVYFS_REPORT}.html
+      - $TRIVYFS_REPORT.html
     expire_in: 1 day
   allow_failure: true
 
 # ================= Security Scan Image (2 jobs song song) =================
 trivy-clean-image:
   stage: security-scan-image
-  variables:
-    GIT_STRATEGY: none
+  image: docker:24-dind
+  services:
+    - docker:24-dind
   script:
-    - docker run --rm -v $(pwd):/${CI_PROJECT_NAME} -v /var/run/docker.sock/:/var/run/docker.sock aquasec/trivy clean --all 
+    - docker run --rm -v $(pwd):/${CI_PROJECT_NAME} -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy clean --all
   tags:
     - laptopshop-runner-devops-shell
   only:
@@ -97,12 +104,13 @@ trivy-clean-image:
 
 trivy-image-scan:
   stage: security-scan-image
-  variables:
-    GIT_STRATEGY: none
+  image: docker:24-dind
+  services:
+    - docker:24-dind
   script:
-    - docker run --rm -v "$(pwd)":"/${CI_PROJECT_NAME}" -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --format template --template "@/contrib/html.tpl" --output "/${CI_PROJECT_NAME}/${TRIVY_IMAGE_REPORT}.html" "$DOCKER_IMAGE"
- 
-
+    - docker run --rm -v "$(pwd)":"/${CI_PROJECT_NAME}" -v /var/run/docker.sock:/var/run/docker.sock \
+      aquasec/trivy:latest image --format template --template "@/contrib/html.tpl" \
+      --output "/${CI_PROJECT_NAME}/${TRIVY_IMAGE_REPORT}.html" "$DOCKER_IMAGE"
   tags:
     - laptopshop-runner-devops-shell
   only:
@@ -115,9 +123,7 @@ trivy-image-scan:
 # ================= Package and Push =================
 package-and-push:
   stage: package-and-push
-  variables:
-    GIT_STRATEGY: none
-  needs: [build, trivy-clean-image, trivy-image-scan]
+  needs: [build, trivy-clean-image, trivy-image-scan] # đợi build và security scan xong
   before_script:
     - docker login ${REGISTRY_URL} -u ${REGISTRY_USER} -p ${REGISTRY_PASSWORD}
   script:
