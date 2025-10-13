@@ -9,4 +9,9 @@ public interface AuthService {
     void register(RegisterRequest registerRequest);
     User getCurrentUser(String username);
     User updateProfile(String username, RegisterRequest updateRequest);
+    void logout(String username);
+    AuthResponse refreshToken(String refreshToken);
+    void changePassword(String username, String oldPassword, String newPassword);
+    void forgotPassword(String email);
+    void resetPassword(String token, String newPassword);
 }

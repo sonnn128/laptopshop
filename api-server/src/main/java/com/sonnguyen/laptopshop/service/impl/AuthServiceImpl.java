@@ -1,6 +1,11 @@
 package com.sonnguyen.laptopshop.service.impl;
 
 import com.sonnguyen.laptopshop.config.JwtService;
+import com.sonnguyen.laptopshop.model.RefreshToken;
+import com.sonnguyen.laptopshop.model.PasswordResetToken;
+import com.sonnguyen.laptopshop.model.CustomUserDetails;
+import com.sonnguyen.laptopshop.repository.RefreshTokenRepository;
+import com.sonnguyen.laptopshop.repository.PasswordResetTokenRepository;
 import com.sonnguyen.laptopshop.exception.CommonException;
 import com.sonnguyen.laptopshop.model.Role;
 import com.sonnguyen.laptopshop.model.User;
@@ -21,7 +26,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +42,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
 
     @Override
@@ -44,7 +53,16 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtService.generateToken((UserDetails) authentication.getPrincipal(), JWT_EXPIRATION_TIME);
         User user = userRepository.findByUsername(username);
-        return new AuthResponse(token, user);
+        // create refresh token
+        RefreshToken refresh = new RefreshToken();
+        refresh.setToken(UUID.randomUUID().toString());
+        refresh.setUser(user);
+        refresh.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 60 * 24 * 30)); // 30 days
+        refreshTokenRepository.save(refresh);
+
+    AuthResponse response = new AuthResponse(token, refresh.getToken(), user);
+        // attach refresh token string in response user? We'll include via a header-like field on AuthResponse if needed
+        return response;
     }
 
     @Override
@@ -92,6 +110,74 @@ public class AuthServiceImpl implements AuthService {
         user.setGender(updateRequest.getGender());
         
         return userRepository.save(user);
+    }
+
+    @Override
+    public void logout(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            refreshTokenRepository.deleteAllByUser(user);
+        }
+    }
+
+    @Override
+    public AuthResponse refreshToken(String refreshToken) {
+        RefreshToken token = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new CommonException("Invalid refresh token", HttpStatus.UNAUTHORIZED));
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(token);
+            throw new CommonException("Refresh token expired", HttpStatus.UNAUTHORIZED);
+        }
+        User user = token.getUser();
+        UserDetails userDetails = new CustomUserDetails(user);
+        String newJwt = jwtService.generateToken(userDetails, JWT_EXPIRATION_TIME);
+    return new AuthResponse(newJwt, token.getToken(), user);
+    }
+
+    @Override
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) throw new CommonException("User not found", HttpStatus.NOT_FOUND);
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new CommonException("Old password is incorrect", HttpStatus.BAD_REQUEST);
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        // invalidate refresh tokens
+        refreshTokenRepository.deleteAllByUser(user);
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        User user = userRepository.findByUsername(email);
+        // try by email if username lookup fails
+        if (user == null) {
+            user = userRepository.findAll().stream().filter(u -> email.equals(u.getEmail())).findFirst().orElse(null);
+        }
+        if (user == null) return; // do not reveal
+        PasswordResetToken prt = new PasswordResetToken();
+        prt.setToken(UUID.randomUUID().toString());
+        prt.setUser(user);
+        prt.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 60)); // 1 hour
+        passwordResetTokenRepository.save(prt);
+        // TODO: send email via EmailService - currently log the token
+        System.out.println("Password reset token for user " + user.getUsername() + ": " + prt.getToken());
+    }
+
+    @Override
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken prt = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new CommonException("Invalid password reset token", HttpStatus.BAD_REQUEST));
+        if (prt.getExpiresAt().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(prt);
+            throw new CommonException("Password reset token expired", HttpStatus.BAD_REQUEST);
+        }
+        User user = prt.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(prt);
+        // invalidate refresh tokens
+        refreshTokenRepository.deleteAllByUser(user);
     }
 }
 

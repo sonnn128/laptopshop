@@ -57,11 +57,13 @@ public class RestControlExceptionHandle {
     @ExceptionHandler({Exception.class})
     @ResponseBody
     public ResponseEntity<ApiResponse<?>> resolveAccessDeniedException(Exception e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                ApiResponse.builder()
-                        .message(e.getMessage())
-                        .success(false)
-                        .build()
-        );
+    // Log full stacktrace for unexpected exceptions to aid debugging
+    e.printStackTrace();
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+        ApiResponse.builder()
+            .message("Internal server error: " + e.getMessage())
+            .success(false)
+            .build()
+    );
     }
 }

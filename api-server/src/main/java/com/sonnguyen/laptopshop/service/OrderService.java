@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import com.sonnguyen.laptopshop.exception.CommonException;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,49 +35,65 @@ public class OrderService {
     }
 
     public OrderResponse createOrder(String username, OrderRequest request) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
-
-        Order order = new Order();
-        order.setUser(user);
-        order.setReceiverName(request.getReceiverName());
-        order.setReceiverAddress(request.getReceiverAddress());
-        order.setReceiverPhone(request.getReceiverPhone());
-        order.setStatus("PENDING");
-        order.setTotalPrice(0.0);
-
-        Order savedOrder = orderRepository.save(order);
-
-        double totalPrice = 0.0;
-        for (CartItemRequest item : request.getCartItems()) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
-
-            if (product.getQuantity() < item.getQuantity()) {
-                throw new RuntimeException("Insufficient product quantity for product: " + product.getName());
+        try {
+            User user = userRepository.findByUsername(username);
+            if (user == null) {
+                throw new CommonException("User not found", HttpStatus.NOT_FOUND);
             }
 
-            OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrder(savedOrder);
-            orderDetail.setProduct(product);
-            orderDetail.setQuantity(item.getQuantity());
-            orderDetail.setPrice(product.getPrice());
-            orderDetailRepository.save(orderDetail);
+            if (request.getCartItems() == null || request.getCartItems().isEmpty()) {
+                throw new CommonException("Cart is empty", HttpStatus.BAD_REQUEST);
+            }
 
-            // Update product quantity and sold count
-            product.setQuantity(product.getQuantity() - item.getQuantity());
-            product.setSold(product.getSold() + item.getQuantity());
-            productRepository.save(product);
+            Order order = new Order();
+            order.setUser(user);
+            order.setReceiverName(request.getReceiverName());
+            order.setReceiverAddress(request.getReceiverAddress());
+            order.setReceiverPhone(request.getReceiverPhone());
+            order.setStatus("PENDING");
+            order.setTotalPrice(0.0);
 
-            totalPrice += item.getQuantity() * product.getPrice();
+            Order savedOrder = orderRepository.save(order);
+
+            double totalPrice = 0.0;
+            for (CartItemRequest item : request.getCartItems()) {
+                if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                    throw new CommonException("Invalid item quantity", HttpStatus.BAD_REQUEST);
+                }
+
+                Product product = productRepository.findById(item.getProductId())
+                        .orElseThrow(() -> new CommonException("Product not found", HttpStatus.NOT_FOUND));
+
+                if (product.getQuantity() < item.getQuantity()) {
+                    throw new CommonException("Insufficient product quantity for product: " + product.getName(), HttpStatus.BAD_REQUEST);
+                }
+
+                OrderDetail orderDetail = new OrderDetail();
+                orderDetail.setOrder(savedOrder);
+                orderDetail.setProduct(product);
+                orderDetail.setQuantity(item.getQuantity());
+                orderDetail.setPrice(product.getPrice());
+                orderDetailRepository.save(orderDetail);
+
+                // Update product quantity and sold count
+                product.setQuantity(product.getQuantity() - item.getQuantity());
+                product.setSold(product.getSold() + item.getQuantity());
+                productRepository.save(product);
+
+                totalPrice += item.getQuantity() * product.getPrice();
+            }
+
+            savedOrder.setTotalPrice(totalPrice);
+            Order finalOrder = orderRepository.save(savedOrder);
+
+            return ModelMapper.toOrderResponse(finalOrder);
+        } catch (CommonException ce) {
+            // rethrow CommonException as-is
+            throw ce;
+        } catch (Exception e) {
+            // Unexpected exception -> wrap to provide clearer HTTP 500 + trigger rollback
+            throw new CommonException("Failed to create order: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        savedOrder.setTotalPrice(totalPrice);
-        Order finalOrder = orderRepository.save(savedOrder);
-
-        return ModelMapper.toOrderResponse(finalOrder);
     }
 
     public Page<OrderResponse> getOrdersByUserId(String username, Pageable pageable) {

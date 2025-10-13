@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -34,7 +35,9 @@ public class Product {
     private String description;
 
     @NotNull
-    @DecimalMin(value = "0", inclusive = false, message = "Quantity must be greater than 0")
+    // allow quantity to be zero (out of stock). previous validation required >0 which caused
+    // JPA validation failures when an order consumed the last item (quantity -> 0).
+    @Min(value = 0, message = "Quantity must be non-negative")
     private Long quantity;
 
     private Long sold = 0L;

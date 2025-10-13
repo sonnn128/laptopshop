@@ -1,9 +1,9 @@
 package com.sonnguyen.laptopshop.controller;
 
 import com.sonnguyen.laptopshop.model.User;
-import com.sonnguyen.laptopshop.payload.request.AuthRequest;
-import com.sonnguyen.laptopshop.payload.request.RegisterRequest;
+import com.sonnguyen.laptopshop.payload.request.*;
 import com.sonnguyen.laptopshop.payload.response.ApiResponse;
+import com.sonnguyen.laptopshop.payload.response.AuthResponse;
 import com.sonnguyen.laptopshop.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,14 +33,47 @@ public class AuthController {
     })
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest) {
-        return ResponseEntity.ok().body(
-                ApiResponse.builder()
-                        .success(true)
-                        .message("login success")
-                        .data(authService.login(authRequest.getUsername(), authRequest.getPassword()))
-                        .build()
-        );
+                AuthResponse authResponse = authService.login(authRequest.getUsername(), authRequest.getPassword());
+                return ResponseEntity.ok().body(
+                                ApiResponse.builder()
+                                                .success(true)
+                                                .message("login success")
+                                                .data(authResponse)
+                                                .build()
+                );
     }
+
+        @PostMapping("/refresh")
+        public ResponseEntity<?> refresh(@Valid @RequestBody RefreshRequest request) {
+                AuthResponse resp = authService.refreshToken(request.getRefreshToken());
+                return ResponseEntity.ok(ApiResponse.builder().success(true).data(resp).build());
+        }
+
+        @PostMapping("/logout")
+        public ResponseEntity<?> logout(Authentication authentication) {
+                if (authentication == null) return ResponseEntity.status(401).body(ApiResponse.builder().success(false).message("Authentication required").build());
+                authService.logout(authentication.getName());
+                return ResponseEntity.ok(ApiResponse.builder().success(true).message("Logged out").build());
+        }
+
+        @PostMapping("/change-password")
+        public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
+                if (authentication == null) return ResponseEntity.status(401).body(ApiResponse.builder().success(false).message("Authentication required").build());
+                authService.changePassword(authentication.getName(), request.getOldPassword(), request.getNewPassword());
+                return ResponseEntity.ok(ApiResponse.builder().success(true).message("Password changed").build());
+        }
+
+        @PostMapping("/forgot-password")
+        public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+                authService.forgotPassword(request.getEmail());
+                return ResponseEntity.ok(ApiResponse.builder().success(true).message("If the email exists, a reset link has been sent").build());
+        }
+
+        @PostMapping("/reset-password")
+        public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+                authService.resetPassword(request.getToken(), request.getNewPassword());
+                return ResponseEntity.ok(ApiResponse.builder().success(true).message("Password has been reset").build());
+        }
 
     @Operation(summary = "User Registration", description = "Register a new user account")
     @ApiResponses(value = {
