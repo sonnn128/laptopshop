@@ -27,7 +27,11 @@ export const productService = {
   // Create new product
   create: async (productData) => {
     try {
-      const response = await api.post('/products', productData);
+      const config = {};
+      if (productData instanceof FormData) {
+        config.headers = { 'Content-Type': 'multipart/form-data' };
+      }
+      const response = await api.post('/products', productData, config);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
@@ -38,7 +42,11 @@ export const productService = {
   // Update product
   update: async (id, productData) => {
     try {
-      const response = await api.put(`/products/${id}`, productData);
+      const config = {};
+      if (productData instanceof FormData) {
+        config.headers = { 'Content-Type': 'multipart/form-data' };
+      }
+      const response = await api.put(`/products/${id}`, productData, config);
       return response.data;
     } catch (error) {
       console.error('API Error:', error);

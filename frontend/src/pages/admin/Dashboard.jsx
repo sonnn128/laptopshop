@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Statistic, 
-  Typography, 
-  Button, 
-  Table, 
-  Tag, 
-  Avatar, 
+import { dashboardService } from '../../services/dashboard.service.js';
+import { formatPrice } from '@/utils/format';
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Typography,
+  Button,
+  Table,
+  Tag,
+  Avatar,
   Space,
   Progress,
   Spin,
   Alert,
   Divider
 } from 'antd';
-import { 
-  ShoppingOutlined, 
-  UserOutlined, 
-  DollarOutlined, 
+import {
+  ShoppingOutlined,
+  UserOutlined,
+  DollarOutlined,
   ShoppingCartOutlined,
   EyeOutlined,
   EditOutlined,
@@ -27,9 +29,14 @@ import {
   TrophyOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons';
-import { productService, userService, orderService, categoryService } from '../../services/adminService.js';
+import { productService } from '../../services/product.service.js';
+import { userService } from '../../services/user.service.js';
+import { orderService } from '../../services/order.service.js';
+import { categoryService } from '../../services/category.service.js';
 
 const { Title, Text } = Typography;
+
+
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -37,7 +44,8 @@ const Dashboard = () => {
     totalProducts: 0,
     totalUsers: 0,
     totalOrders: 0,
-    totalCategories: 0
+    totalCategories: 0,
+    totalRevenue: 0
   });
   const [recentProducts, setRecentProducts] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
@@ -51,33 +59,36 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all data in parallel
       const [
-        productsResponse,
-        usersResponse,
-        ordersResponse,
-        categoriesResponse
+        statsRes,
+        productsRes,
+        usersRes,
+        ordersRes,
+        categoriesRes
       ] = await Promise.all([
-        productService.getAll(0, 5), // Get first 5 products
-        userService.getAll(0, 5), // Get first 5 users
-        orderService.getAll(0, 5), // Get first 5 orders
-        categoryService.getAll() // Get all categories
+        dashboardService.getStats(),
+        dashboardService.getTopProducts(),
+        userService.getAll(0, 5), // Keep using userService for recent users as we didn't make a specific endpoint or just reuse getAll
+        dashboardService.getRecentOrders(),
+        categoryService.getAll()
       ]);
 
       // Update stats
       setStats({
-        totalProducts: productsResponse.data?.totalElements || 0,
-        totalUsers: usersResponse.data?.totalElements || 0,
-        totalOrders: ordersResponse.data?.totalElements || 0,
-        totalCategories: categoriesResponse.data?.length || 0
+        totalProducts: statsRes.totalProducts || 0,
+        totalUsers: statsRes.totalUsers || 0,
+        totalOrders: statsRes.totalOrders || 0,
+        totalCategories: statsRes.totalCategories || 0,
+        totalRevenue: statsRes.totalRevenue || 0
       });
 
       // Update recent data
-      setRecentProducts(productsResponse.data?.content || []);
-      setRecentUsers(usersResponse.data?.content || []);
-      setRecentOrders(ordersResponse.data?.content || []);
-      setCategories(categoriesResponse.data || []);
+      setRecentProducts(productsRes || []);
+      setRecentUsers(usersRes.data?.content || []); // usersRes is still Page<User>
+      setRecentOrders(ordersRes || []);
+      setCategories(categoriesRes.data || []);
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -93,10 +104,10 @@ const Dashboard = () => {
       key: 'name',
       render: (text, record) => (
         <Space>
-          <Avatar 
-            shape="square" 
-            size={40} 
-            src={record.image} 
+          <Avatar
+            shape="square"
+            size={40}
+            src={record.image}
             icon={<ShoppingOutlined />}
           />
           <div>
@@ -113,7 +124,7 @@ const Dashboard = () => {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price) => `$${price?.toFixed(2) || '0.00'}`,
+      render: (price) => formatPrice(price),
     },
     {
       title: 'Stock',
@@ -204,7 +215,7 @@ const Dashboard = () => {
       title: 'Total',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (amount) => `$${amount?.toFixed(2) || '0.00'}`,
+      render: (amount) => formatPrice(amount),
     },
     {
       title: 'Status',
@@ -288,12 +299,23 @@ const Dashboard = () => {
             />
           </Card>
         </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Total Revenue"
+              value={stats.totalRevenue}
+              formatter={(value) => formatPrice(value)}
+              prefix={<DollarOutlined style={{ color: '#f5222d' }} />}
+              valueStyle={{ color: '#f5222d' }}
+            />
+          </Card>
+        </Col>
       </Row>
 
       {/* Recent Data Tables */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card 
+          <Card
             title={
               <Space>
                 <ShoppingOutlined />
@@ -312,7 +334,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card 
+          <Card
             title={
               <Space>
                 <UserOutlined />
@@ -334,7 +356,7 @@ const Dashboard = () => {
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24}>
-          <Card 
+          <Card
             title={
               <Space>
                 <ClockCircleOutlined />
@@ -358,7 +380,7 @@ const Dashboard = () => {
       {categories.length > 0 && (
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col xs={24}>
-            <Card 
+            <Card
               title={
                 <Space>
                   <TrophyOutlined />
@@ -372,9 +394,9 @@ const Dashboard = () => {
                   <Col xs={24} sm={12} md={8} lg={6} key={category.id}>
                     <Card size="small" hoverable>
                       <div style={{ textAlign: 'center' }}>
-                        <Avatar 
-                          size={48} 
-                          icon={<TrophyOutlined />} 
+                        <Avatar
+                          size={48}
+                          icon={<TrophyOutlined />}
                           style={{ marginBottom: 8 }}
                         />
                         <div>

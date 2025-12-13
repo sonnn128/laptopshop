@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final FileStorageService fileStorageService;
 
     private static final String CATEGORY_NOT_FOUND_BY_ID = "Category not found with id: ";
     private static final String CATEGORY_NOT_FOUND_BY_SLUG = "Category not found with slug: ";
@@ -45,7 +46,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryResponse createCategory(CategoryRequest request) {
+    public CategoryResponse createCategory(CategoryRequest request, org.springframework.web.multipart.MultipartFile imageFile) {
         // Check if slug already exists
         if (categoryRepository.existsBySlug(request.getSlug())) {
             throw new CommonException(CATEGORY_SLUG_EXISTS + request.getSlug() + CATEGORY_SLUG_EXISTS_SUFFIX, HttpStatus.CONFLICT);
@@ -55,14 +56,20 @@ public class CategoryService {
         category.setName(request.getName());
         category.setSlug(request.getSlug());
         category.setDescription(request.getDescription());
-        category.setImage(request.getImage());
+        
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(imageFile);
+            category.setImage(imageUrl);
+        } else {
+            category.setImage(request.getImage());
+        }
 
         Category savedCategory = categoryRepository.save(category);
         return convertToResponse(savedCategory);
     }
 
     @Transactional
-    public CategoryResponse updateCategory(Long id, CategoryRequest request) {
+    public CategoryResponse updateCategory(Long id, CategoryRequest request, org.springframework.web.multipart.MultipartFile imageFile) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new CommonException(CATEGORY_NOT_FOUND_BY_ID + id, HttpStatus.NOT_FOUND));
 
@@ -74,7 +81,13 @@ public class CategoryService {
         category.setName(request.getName());
         category.setSlug(request.getSlug());
         category.setDescription(request.getDescription());
-        category.setImage(request.getImage());
+        
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(imageFile);
+            category.setImage(imageUrl);
+        } else if (request.getImage() != null && !request.getImage().isEmpty()) {
+             category.setImage(request.getImage());
+        }
 
         Category savedCategory = categoryRepository.save(category);
         return convertToResponse(savedCategory);

@@ -17,6 +17,10 @@ public class Order {
     private Long id;
 
     private Double totalPrice;
+    
+    // Coupon info
+    private String couponCode;
+    private Double discountAmount;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -24,6 +28,7 @@ public class Order {
     private User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<OrderDetail> orderDetails;
 
     private String receiverName;

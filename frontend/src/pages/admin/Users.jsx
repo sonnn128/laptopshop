@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Table, 
-  Space, 
+import {
+  Table,
+  Space,
   Typography,
   Card,
   Tag,
@@ -17,14 +17,14 @@ import {
   Col,
   InputNumber
 } from 'antd';
-import { 
+import {
   UserOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined
 } from '@ant-design/icons';
-import { userService } from '../../services/adminService';
+import { userService } from '../../services/user.service';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -62,9 +62,9 @@ const Users = () => {
         keyword: searchKeyword || undefined,
         role: searchRole || undefined
       };
-      
+
       const response = await userService.search(searchKeyword, searchRole, params);
-      
+
       if (response.content) {
         // Handle Page object
         setUsers(response.content);
@@ -195,32 +195,34 @@ const Users = () => {
       render: (date) => new Date(date).toLocaleDateString(),
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
-          <Popconfirm
-            title="Are you sure you want to delete this user?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
+      render: (_, record) => {
+        const isAdmin = record.roles?.some(role => role.id === 'ADMIN');
+        return (
+          <Space>
             <Button
               type="primary"
-              danger
               size="small"
-              icon={<DeleteOutlined />}
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
             />
-          </Popconfirm>
-        </Space>
-      ),
+            {!isAdmin && (
+              <Popconfirm
+                title="Are you sure you want to delete this user?"
+                onConfirm={() => handleDelete(record.id)}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Button
+                  type="primary"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                />
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -272,7 +274,7 @@ const Users = () => {
             </Col>
           </Row>
         </div>
-        
+
         <Table
           columns={columns}
           dataSource={users}
@@ -284,7 +286,7 @@ const Users = () => {
             total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
+            showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} users`,
             onChange: (page, pageSize) => {
               setPagination(prev => ({

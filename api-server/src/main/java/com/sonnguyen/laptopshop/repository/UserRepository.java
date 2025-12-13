@@ -14,6 +14,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Page<User> findAllByUsernameContaining(String search, Pageable pageable);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
+    User findByEmail(String email);
     
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.id = :roleId")
     Page<User> findByRolesId(@Param("roleId") String roleId, Pageable pageable);

@@ -26,7 +26,7 @@ const AddToCartButton = ({ product, size = 'default', showQuantity = true, style
     try {
       setAdding(true);
       const result = await addToCart(product, quantity);
-      
+
       if (result.success) {
         message.success(`${product.name} added to cart!`);
         setQuantity(1); // Reset quantity after adding
@@ -106,7 +106,7 @@ const AddToCartButton = ({ product, size = 'default', showQuantity = true, style
   // compact mode for card actions (small icons / no long labels)
   if (compact) {
     return (
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <Tooltip title={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}>
           <Button
             icon={isInWishlist ? <HeartFilled style={{ color: 'red' }} /> : <HeartOutlined />}

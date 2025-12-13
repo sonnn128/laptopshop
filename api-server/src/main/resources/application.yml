@@ -21,6 +21,18 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:sonvipkl04@gmail.com}
+    password: ${MAIL_PASSWORD:zmfw sgbw nowc pxvl}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   jpa:
     show-sql: true
     hibernate:
@@ -53,3 +65,8 @@ springdoc:
     defaultModelExpandDepth: 1
   show-actuator: true
   packages-to-scan: com.sonnguyen.base.controller
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dswdadh2n}
+  api-key: ${CLOUDINARY_API_KEY:741574128814778}
+  api-secret: ${CLOUDINARY_API_SECRET:J9XuHektVDcN5CI_3_58RmDjSoE}

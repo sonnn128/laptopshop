@@ -19,6 +19,8 @@ public class OrderResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT")
     private Instant orderDate;
 
+    private UserResponse user;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT")
     private Instant createdAt;
 

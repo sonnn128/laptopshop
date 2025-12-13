@@ -1,23 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Table, 
-  Button, 
-  Space, 
-  Modal, 
-  Select, 
+import { formatPrice } from '@/utils/format';
+import {
+  Table,
+  Button,
+  Space,
+  Modal,
+  Select,
   message,
   Typography,
   Card,
   Tag,
   Descriptions,
-  Badge
+  Badge,
+  Image
 } from 'antd';
-import { 
-  EyeOutlined, 
+import {
+  EyeOutlined,
   CheckOutlined,
   CloseOutlined
 } from '@ant-design/icons';
-import { orderService } from '../../services/adminService';
+import { orderService } from '../../services/order.service';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -48,9 +50,9 @@ const Orders = () => {
       } else {
         response = await orderService.getByStatus(status, { page, size });
       }
-      
+
       console.log('Orders API response:', response);
-      
+
       // Handle Page object response
       if (response && response.content) {
         // It's a Page object
@@ -141,6 +143,7 @@ const Orders = () => {
 
   const getCustomerName = (record) => {
     if (!record) return '';
+    if (record.receiverName) return record.receiverName; // Priority check
     // common shapes
     if (record.customerName) return record.customerName;
     if (record.customer && (record.customer.name || record.customer.fullName)) return record.customer.name || record.customer.fullName;
@@ -170,7 +173,7 @@ const Orders = () => {
 
   const getItems = (record) => {
     if (!record) return [];
-    return record.items || record.orderItems || record.details || [];
+    return record.orderDetails || record.items || record.orderItems || record.details || [];
   };
 
   const columns = [
@@ -195,7 +198,7 @@ const Orders = () => {
       key: 'totalPrice',
       render: (_, record) => {
         const amount = getTotalAmount(record);
-        return amount ? `$${Number(amount).toFixed(2)}` : '$0.00';
+        return amount ? formatPrice(amount) : formatPrice(0);
       },
     },
     {
@@ -215,26 +218,26 @@ const Orders = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            type="primary" 
-            icon={<EyeOutlined />} 
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
             onClick={() => handleView(record)}
           >
             View
           </Button>
           {record.status === 'PENDING' && (
             <>
-              <Button 
-                type="primary" 
-                icon={<CheckOutlined />} 
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
                 onClick={() => handleStatusChange(record.id, 'PROCESSING')}
                 style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
               >
                 Process
               </Button>
-              <Button 
+              <Button
                 danger
-                icon={<CloseOutlined />} 
+                icon={<CloseOutlined />}
                 onClick={() => handleStatusChange(record.id, 'CANCELLED')}
               >
                 Cancel
@@ -242,9 +245,9 @@ const Orders = () => {
             </>
           )}
           {record.status === 'PROCESSING' && (
-            <Button 
-              type="primary" 
-              icon={<CheckOutlined />} 
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
               onClick={() => handleStatusChange(record.id, 'COMPLETED')}
               style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
             >
@@ -259,11 +262,11 @@ const Orders = () => {
   return (
     <div>
       <Card>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 16 
+          marginBottom: 16
         }}>
           <Title level={2} style={{ margin: 0 }}>Orders Management</Title>
           <Select
@@ -279,7 +282,7 @@ const Orders = () => {
             <Option value="CANCELLED">Cancelled</Option>
           </Select>
         </div>
-        
+
         <Table
           columns={columns}
           dataSource={orders}
@@ -307,48 +310,69 @@ const Orders = () => {
       >
         {selectedOrder && (
           <div>
-            <Descriptions bordered column={2}>
-              <Descriptions.Item label="Order Number" span={2}>
-                {getOrderNumber(selectedOrder)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Customer Name">
-                {getCustomerName(selectedOrder)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Customer Email">
-                {getCustomerEmail(selectedOrder)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Amount">
-                ${Number(getTotalAmount(selectedOrder)).toFixed(2)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status">
-                <Tag color={getStatusColor(selectedOrder.status)}>
-                  {String(selectedOrder.status || '').toUpperCase()}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Order Date" span={2}>
+            <Descriptions bordered column={1} size="middle" styles={{ label: { width: '150px' } }}>
+              <Descriptions.Item label="Date">
                 {getOrderDate(selectedOrder)}
               </Descriptions.Item>
-              <Descriptions.Item label="Shipping Address" span={2}>
-                {selectedOrder.shippingAddress || selectedOrder.shippingAddressDetail || ''}
+              <Descriptions.Item label="Status">
+                {getStatusBadge(selectedOrder.status)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Receiver">
+                {selectedOrder.receiverName || getCustomerName(selectedOrder)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Address">
+                {selectedOrder.receiverAddress || selectedOrder.shippingAddress || ''}
+              </Descriptions.Item>
+              <Descriptions.Item label="Phone">
+                {selectedOrder.receiverPhone || ''}
+              </Descriptions.Item>
+              <Descriptions.Item label="Total Amount">
+                <Typography.Text strong style={{ fontSize: '16px' }}>
+                  {formatPrice(getTotalAmount(selectedOrder))}
+                </Typography.Text>
               </Descriptions.Item>
             </Descriptions>
 
             <div style={{ marginTop: 24 }}>
-              <Title level={4}>Order Items</Title>
               <Table
                 dataSource={getItems(selectedOrder)}
                 columns={[
-                  { title: 'Product Name', dataIndex: 'name', key: 'name' },
-                  { title: 'Quantity', dataIndex: 'quantity', key: 'quantity' },
+                  {
+                    title: 'Product',
+                    key: 'product',
+                    width: '40%',
+                    render: (_, record) => (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Image
+                          src={record.product?.image}
+                          width={50}
+                          height={50}
+                          style={{ objectFit: 'cover', borderRadius: '4px' }}
+                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsZqBg+IkQAi4eNcY2FQ+gfQO8nX3GwQcbgx1j+BmFUpA4nXwDxKzToYG4ib/2//9nYGBgO8T8//9+4///v4sB3d9vGjD8HwD3FgLefG8sYgAAAAlwSFlzAAALEgAACxIB0t1+/AAAADh0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggVGhlIEdJTVDvZCVuAAAADUlEQVQ4jWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg=="
+                        />
+                        <span>{record.product?.name || 'Unknown Product'}</span>
+                      </div>
+                    )
+                  },
                   {
                     title: 'Price',
                     dataIndex: 'price',
                     key: 'price',
-                    render: (price) => `$${Number(price || 0).toFixed(2)}`
+                    render: (price) => formatPrice(price || 0)
+                  },
+                  { title: 'Quantity', dataIndex: 'quantity', key: 'quantity' },
+                  {
+                    title: 'Total',
+                    key: 'total',
+                    render: (_, record) => (
+                      <Typography.Text strong>
+                        {formatPrice((record.price || 0) * (record.quantity || 0))}
+                      </Typography.Text>
+                    )
                   },
                 ]}
                 pagination={false}
-                size="small"
+                rowKey="id"
               />
             </div>
           </div>

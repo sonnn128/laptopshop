@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  Card, 
-  Form, 
-  Input, 
-  Button, 
-  Switch, 
-  Select, 
-  message, 
-  Typography, 
-  Row, 
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Switch,
+  Select,
+  message,
+  Typography,
+  Row,
   Col,
   Divider,
   Space
 } from 'antd';
-import { 
-  SaveOutlined, 
+import {
+  SaveOutlined,
   ReloadOutlined,
   MailOutlined,
   GlobalOutlined,
@@ -24,10 +24,14 @@ import {
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+import { useTheme } from '@/contexts/ThemeContext.jsx';
+import { Radio } from 'antd';
+import { BgColorsOutlined } from '@ant-design/icons';
 
 const Settings = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { themeMode, setThemeMode } = useTheme();
 
   const handleSave = async (values) => {
     setLoading(true);
@@ -51,8 +55,30 @@ const Settings = () => {
   return (
     <div>
       <Title level={2}>System Settings</Title>
-      
+
       <Row gutter={[24, 24]}>
+        <Col xs={24}>
+          <Card title="Appearance" icon={<BgColorsOutlined />}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Text strong>Theme Mode:</Text>
+              <Radio.Group
+                value={themeMode}
+                onChange={(e) => {
+                  setThemeMode(e.target.value);
+                  message.success(`Theme switched to ${e.target.value} mode`);
+                }}
+                buttonStyle="solid"
+              >
+                <Radio.Button value="light">Light</Radio.Button>
+                <Radio.Button value="dark">Dark</Radio.Button>
+                <Radio.Button value="system">System</Radio.Button>
+              </Radio.Group>
+              <Text type="secondary" style={{ marginLeft: '8px' }}>
+                {themeMode === 'system' && '(Follows your operating system preference)'}
+              </Text>
+            </div>
+          </Card>
+        </Col>
         <Col xs={24} lg={12}>
           <Card title="General Settings" icon={<GlobalOutlined />}>
             <Form
@@ -74,14 +100,14 @@ const Settings = () => {
               >
                 <Input />
               </Form.Item>
-              
+
               <Form.Item
                 name="siteDescription"
                 label="Site Description"
               >
                 <TextArea rows={3} />
               </Form.Item>
-              
+
               <Form.Item
                 name="defaultCurrency"
                 label="Default Currency"
@@ -92,7 +118,7 @@ const Settings = () => {
                   <Option value="VND">VND - Vietnamese Dong</Option>
                 </Select>
               </Form.Item>
-              
+
               <Form.Item
                 name="maintenanceMode"
                 label="Maintenance Mode"
@@ -100,7 +126,7 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="allowRegistration"
                 label="Allow User Registration"
@@ -111,7 +137,7 @@ const Settings = () => {
             </Form>
           </Card>
         </Col>
-        
+
         <Col xs={24} lg={12}>
           <Card title="Email Settings" icon={<MailOutlined />}>
             <Form
@@ -131,35 +157,35 @@ const Settings = () => {
               >
                 <Input />
               </Form.Item>
-              
+
               <Form.Item
                 name="smtpPort"
                 label="SMTP Port"
               >
                 <Input type="number" />
               </Form.Item>
-              
+
               <Form.Item
                 name="smtpUsername"
                 label="SMTP Username"
               >
                 <Input />
               </Form.Item>
-              
+
               <Form.Item
                 name="smtpPassword"
                 label="SMTP Password"
               >
                 <Input.Password />
               </Form.Item>
-              
+
               <Form.Item
                 name="fromEmail"
                 label="From Email"
               >
                 <Input />
               </Form.Item>
-              
+
               <Form.Item
                 name="fromName"
                 label="From Name"
@@ -170,7 +196,7 @@ const Settings = () => {
           </Card>
         </Col>
       </Row>
-      
+
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={12}>
           <Card title="Security Settings" icon={<SecurityScanOutlined />}>
@@ -190,21 +216,21 @@ const Settings = () => {
               >
                 <Input type="number" min={5} max={1440} />
               </Form.Item>
-              
+
               <Form.Item
                 name="maxLoginAttempts"
                 label="Max Login Attempts"
               >
                 <Input type="number" min={3} max={10} />
               </Form.Item>
-              
+
               <Form.Item
                 name="passwordMinLength"
                 label="Minimum Password Length"
               >
                 <Input type="number" min={6} max={32} />
               </Form.Item>
-              
+
               <Form.Item
                 name="requireTwoFactor"
                 label="Require Two-Factor Authentication"
@@ -212,7 +238,7 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="enableAuditLog"
                 label="Enable Audit Logging"
@@ -223,7 +249,7 @@ const Settings = () => {
             </Form>
           </Card>
         </Col>
-        
+
         <Col xs={24} lg={12}>
           <Card title="Notification Settings">
             <Form
@@ -244,7 +270,7 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="orderNotifications"
                 label="Order Notifications"
@@ -252,7 +278,7 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="userNotifications"
                 label="User Registration Notifications"
@@ -260,7 +286,7 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="systemNotifications"
                 label="System Notifications"
@@ -268,9 +294,9 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Divider />
-              
+
               <Form.Item
                 name="lowStockAlert"
                 label="Low Stock Alert"
@@ -278,7 +304,7 @@ const Settings = () => {
               >
                 <Switch />
               </Form.Item>
-              
+
               <Form.Item
                 name="stockThreshold"
                 label="Stock Threshold"
@@ -289,20 +315,20 @@ const Settings = () => {
           </Card>
         </Col>
       </Row>
-      
+
       <Card style={{ marginTop: 24 }}>
         <Space>
-          <Button 
-            type="primary" 
-            icon={<SaveOutlined />} 
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
             onClick={() => form.submit()}
             loading={loading}
             size="large"
           >
             Save All Settings
           </Button>
-          <Button 
-            icon={<ReloadOutlined />} 
+          <Button
+            icon={<ReloadOutlined />}
             onClick={handleReset}
             size="large"
           >

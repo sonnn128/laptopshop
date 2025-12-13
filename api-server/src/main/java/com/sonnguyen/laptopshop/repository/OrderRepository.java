@@ -22,4 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     @Query("SELECT o FROM Order o WHERE o.user = :user AND o.status = :status")
     List<Order> findByUserAndStatus(@Param("user") User user, @Param("status") String status);
+    @Query("SELECT SUM(o.totalPrice) FROM Order o WHERE o.status = 'COMPLETED'")
+    Double sumRevenue();
 }

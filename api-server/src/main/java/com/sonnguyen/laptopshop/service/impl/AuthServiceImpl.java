@@ -7,6 +7,7 @@ import com.sonnguyen.laptopshop.model.CustomUserDetails;
 import com.sonnguyen.laptopshop.repository.RefreshTokenRepository;
 import com.sonnguyen.laptopshop.repository.PasswordResetTokenRepository;
 import com.sonnguyen.laptopshop.exception.CommonException;
+import com.sonnguyen.laptopshop.exception.NotFoundException;
 import com.sonnguyen.laptopshop.model.Role;
 import com.sonnguyen.laptopshop.model.User;
 import com.sonnguyen.laptopshop.payload.request.RegisterRequest;
@@ -44,6 +45,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final com.sonnguyen.laptopshop.service.EmailService emailService;
 
 
     @Override
@@ -60,9 +62,8 @@ public class AuthServiceImpl implements AuthService {
         refresh.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 60 * 24 * 30)); // 30 days
         refreshTokenRepository.save(refresh);
 
-    AuthResponse response = new AuthResponse(token, refresh.getToken(), user);
         // attach refresh token string in response user? We'll include via a header-like field on AuthResponse if needed
-        return response;
+        return new AuthResponse(token, refresh.getToken(), user);
     }
 
     @Override
@@ -108,6 +109,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(updateRequest.getPhone());
         user.setAddress(updateRequest.getAddress());
         user.setGender(updateRequest.getGender());
+        user.setAvatar(updateRequest.getAvatar());
         
         return userRepository.save(user);
     }
@@ -149,19 +151,24 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void forgotPassword(String email) {
-        User user = userRepository.findByUsername(email);
-        // try by email if username lookup fails
+        User user = userRepository.findByEmail(email);
         if (user == null) {
-            user = userRepository.findAll().stream().filter(u -> email.equals(u.getEmail())).findFirst().orElse(null);
+             user = userRepository.findByUsername(email);
         }
-        if (user == null) return; // do not reveal
+        if (user == null) {
+            throw new NotFoundException("User not found with email: " + email);
+        }
+
+        // Check if token already exists? Maybe invalidate old ones. 
+        // For simplicity, just create new one.
         PasswordResetToken prt = new PasswordResetToken();
         prt.setToken(UUID.randomUUID().toString());
         prt.setUser(user);
-        prt.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 60)); // 1 hour
+        prt.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 60 * 24)); // 24 hours
         passwordResetTokenRepository.save(prt);
-        // TODO: send email via EmailService - currently log the token
-        System.out.println("Password reset token for user " + user.getUsername() + ": " + prt.getToken());
+
+        String link = "http://localhost:5173/reset-password?token=" + prt.getToken();
+        emailService.sendResetPasswordEmail(user.getEmail(), link);
     }
 
     @Override

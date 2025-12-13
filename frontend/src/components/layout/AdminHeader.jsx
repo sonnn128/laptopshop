@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Layout, Button, Avatar, Dropdown, Typography, Badge, Tooltip } from 'antd';
-import { 
+import { Layout, Button, Avatar, Dropdown, Typography, Badge, Tooltip, theme } from 'antd';
+import {
   LogoutOutlined,
   UserOutlined,
   BellOutlined,
@@ -20,6 +20,9 @@ const { Text } = Typography;
 const AdminHeader = ({ collapsed, onToggleCollapse }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const {
+    token: { colorBgContainer, colorText, colorTextSecondary, colorBorderSecondary },
+  } = theme.useToken();
 
   const handleLogout = () => {
     logout();
@@ -59,8 +62,8 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
     <Header
       style={{
         padding: '0 16px',
-        background: '#fff',
-        borderBottom: '1px solid #f0f0f0',
+        background: colorBgContainer,
+        borderBottom: `1px solid ${colorBorderSecondary}`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -72,9 +75,9 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
         overflow: 'hidden'
       }}
     >
-      <div className="header-left-section" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div className="header-left-section" style={{
+        display: 'flex',
+        alignItems: 'center',
         gap: 16,
         flex: '1 1 auto',
         minWidth: 0
@@ -94,10 +97,10 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
             flexShrink: 0
           }}
         />
-        
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
           gap: 12,
           minWidth: 0,
           flex: '1 1 auto'
@@ -120,23 +123,24 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
             LS
           </div>
           <div style={{ minWidth: 0 }}>
-            <Text 
-              strong 
+            <Text
+              strong
               className="header-title-text"
-              style={{ 
-                fontSize: '18px', 
-                color: '#262626',
+              style={{
+                fontSize: '18px',
+                color: colorText,
                 display: 'block',
                 lineHeight: '1.2'
               }}
             >
               Laptop Shop Admin
             </Text>
-            <Text 
-              type="secondary" 
+            <Text
+              type="secondary"
               className="header-title-text"
-              style={{ 
+              style={{
                 fontSize: '12px',
+                color: colorTextSecondary,
                 display: 'block',
                 lineHeight: '1.2'
               }}
@@ -147,9 +151,9 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
         </div>
       </div>
 
-      <div className="header-right-section" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div className="header-right-section" style={{
+        display: 'flex',
+        alignItems: 'center',
         gap: 8
       }}>
         <Tooltip title="Go to Website">
@@ -157,7 +161,7 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
             type="text"
             icon={<HomeOutlined />}
             onClick={handleGoHome}
-            style={{ 
+            style={{
               color: '#1890ff',
               width: 40,
               height: 40,
@@ -171,7 +175,7 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
             <Button
               type="text"
               icon={<BellOutlined />}
-              style={{ 
+              style={{
                 fontSize: '16px',
                 width: 40,
                 height: 40,
@@ -200,35 +204,37 @@ const AdminHeader = ({ collapsed, onToggleCollapse }) => {
               background: 'transparent'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f5f5f5';
+              e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.04)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <Avatar 
-              size="small" 
+            <Avatar
+              size="small"
               icon={<UserOutlined />}
               style={{ backgroundColor: '#1890ff', flexShrink: 0 }}
             />
-            <div style={{ 
+            <div style={{
               textAlign: 'left'
             }}>
-              <Text 
-                strong 
+              <Text
+                strong
                 className="header-user-text"
-                style={{ 
+                style={{
                   fontSize: '14px',
+                  color: colorText,
                   display: 'block'
                 }}
               >
                 {user?.username || 'Admin'}
               </Text>
-              <Text 
-                type="secondary" 
+              <Text
+                type="secondary"
                 className="header-user-text"
-                style={{ 
+                style={{
                   fontSize: '12px',
+                  color: colorTextSecondary,
                   display: 'block'
                 }}
               >

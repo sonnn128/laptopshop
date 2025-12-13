@@ -1,29 +1,37 @@
-const STORAGE_KEY = 'recentViews';
-const MAX = 10;
+export const pushView = (product) => {
+    try {
+        if (!product || !product.id) return;
 
-export function pushView(product) {
-  if (!product || !product.id) return;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    let arr = raw ? JSON.parse(raw) : [];
-    // remove existing
-    arr = arr.filter(p => p.id !== product.id);
-    arr.unshift(product);
-    if (arr.length > MAX) arr = arr.slice(0, MAX);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-  } catch (e) {
-    console.error('recentViews push error', e);
-  }
-}
+        const stored = localStorage.getItem('recentlyViewed');
+        let recent = stored ? JSON.parse(stored) : [];
 
-export function getRecentViews() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    localStorage.removeItem(STORAGE_KEY);
-    return [];
-  }
-}
+        // Remove existing same product to push to top
+        recent = recent.filter(p => p.id !== product.id);
 
-export default { pushView, getRecentViews };
+        // Add to front
+        recent.unshift({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            factory: product.factory
+        });
+
+        // Limit to 10
+        if (recent.length > 10) {
+            recent.pop();
+        }
+
+        localStorage.setItem('recentlyViewed', JSON.stringify(recent));
+    } catch (e) {
+        console.error("Failed to update recently viewed", e);
+    }
+};
+export const getRecentViews = () => {
+    try {
+        const stored = localStorage.getItem('recentlyViewed');
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        return [];
+    }
+};

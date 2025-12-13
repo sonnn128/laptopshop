@@ -23,6 +23,17 @@ public class RestControlExceptionHandle {
                         .build());
     }
 
+    @ExceptionHandler({NotFoundException.class})
+    @ResponseBody
+    public ResponseEntity<ApiResponse<?>> resolveNotFoundException(NotFoundException e) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.builder()
+                        .message(e.getMessage())
+                        .success(false)
+                        .build());
+    }
+
     @ExceptionHandler({MethodArgumentNotValidException.class})
     @ResponseBody
     public ResponseEntity<ApiResponse<?>> resolveInvalidException(MethodArgumentNotValidException e) {

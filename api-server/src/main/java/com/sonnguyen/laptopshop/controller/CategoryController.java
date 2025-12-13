@@ -20,6 +20,7 @@ import java.util.List;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
@@ -33,17 +34,24 @@ public class CategoryController {
         return ResponseEntity.ok(category);
     }
 
-    @PostMapping
+    @PostMapping(consumes = { org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
-        CategoryResponse category = categoryService.createCategory(request);
+    public ResponseEntity<CategoryResponse> createCategory(
+            @RequestPart("category") String categoryStr,
+            @RequestPart(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) throws java.io.IOException {
+        CategoryRequest request = objectMapper.readValue(categoryStr, CategoryRequest.class);
+        CategoryResponse category = categoryService.createCategory(request, imageFile);
         return ResponseEntity.status(HttpStatus.CREATED).body(category);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = { org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE })
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
-        CategoryResponse category = categoryService.updateCategory(id, request);
+    public ResponseEntity<CategoryResponse> updateCategory(
+            @PathVariable Long id, 
+            @RequestPart("category") String categoryStr,
+            @RequestPart(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) throws java.io.IOException {
+        CategoryRequest request = objectMapper.readValue(categoryStr, CategoryRequest.class);
+        CategoryResponse category = categoryService.updateCategory(id, request, imageFile);
         return ResponseEntity.ok(category);
     }
 

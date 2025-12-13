@@ -152,4 +152,29 @@ public class ModelMapper {
         
         return response;
     }
+    // Address mappings
+    public static Address toAddress(com.sonnguyen.laptopshop.payload.request.AddressRequest request) {
+        Address address = new Address();
+        address.setReceiverName(request.getReceiverName());
+        address.setPhone(request.getPhone());
+        address.setCity(request.getCity());
+        address.setDistrict(request.getDistrict());
+        address.setWard(request.getWard());
+        address.setStreet(request.getStreet());
+        address.setDefault(request.isDefault());
+        return address;
+    }
+
+    public static AddressResponse toAddressResponse(Address address) {
+        AddressResponse response = new AddressResponse();
+        response.setId(address.getId());
+        response.setReceiverName(address.getReceiverName());
+        response.setPhone(address.getPhone());
+        response.setCity(address.getCity());
+        response.setDistrict(address.getDistrict());
+        response.setWard(address.getWard());
+        response.setStreet(address.getStreet());
+        response.setDefault(address.isDefault());
+        return response;
+    }
 }

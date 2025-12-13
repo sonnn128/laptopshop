@@ -10,15 +10,18 @@ import {
   LogoutOutlined,
   SettingOutlined,
   ShoppingOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  BulbOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useTheme } from '@/contexts/ThemeContext.jsx';
 import CartIcon from '../CartIcon.jsx';
 
 const { Header } = Layout;
 
 const Navbar = () => {
   const { user, logout, isAdmin } = useAuth();
+  const { themeMode, setThemeMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -100,10 +103,10 @@ const Navbar = () => {
   };
 
   return (
-  <Header style={{ position: 'fixed', zIndex: 1, width: '100%', display: 'flex', alignItems: 'center', padding: '0 24px', height: 64 }}>
+    <Header style={{ position: 'fixed', zIndex: 1, width: '100%', display: 'flex', alignItems: 'center', padding: '0 24px', height: 64 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginRight: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => navigate('/') }>
-          <div style={{ width: 40, height: 40, background: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => navigate('/')}>
+          <div style={{ width: 40, height: 40, background: themeMode !== 'light' ? '#303030' : 'white', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <LaptopOutlined style={{ color: '#1890ff', fontSize: 20 }} />
           </div>
           <div style={{ color: 'white', fontSize: '18px', fontWeight: '700' }}>Laptop Shop</div>
@@ -138,6 +141,17 @@ const Navbar = () => {
         </Button>
         <CartIcon />
 
+        <Button
+          type="text"
+          icon={<BulbOutlined />}
+          style={{ color: 'white' }}
+          onClick={() => {
+            const nextMode = themeMode === 'light' ? 'dark' : (themeMode === 'dark' ? 'system' : 'light');
+            setThemeMode(nextMode);
+          }}
+          title={`Theme: ${themeMode}`}
+        />
+
         {user ? (
           <>
             {isAdmin() && (
@@ -150,7 +164,7 @@ const Navbar = () => {
                 </Button>
               </Dropdown>
             )}
-            
+
             <Dropdown
               menu={{ items: userMenuItems }}
               placement="bottomRight"
@@ -182,7 +196,7 @@ const Navbar = () => {
           </div>
         )}
       </div>
-    </Header>
+    </Header >
   );
 };
 

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Tag, Spin } from 'antd';
+import { Tag, Spin, theme } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api.js';
 
 const CategoryStrip = () => {
+  const { token } = theme.useToken();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const CategoryStrip = () => {
   if (loading) return <div style={{ padding: '8px 24px' }}><Spin size="small" /></div>;
 
   return (
-    <div style={{ padding: '8px 24px', background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+    <div style={{ padding: '8px 24px', background: token.colorBgContainer, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {categories.map(cat => (
           <Tag

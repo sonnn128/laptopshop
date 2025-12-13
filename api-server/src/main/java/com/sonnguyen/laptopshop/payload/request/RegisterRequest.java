@@ -29,6 +29,8 @@ public class RegisterRequest {
 
     private String address;
 
+    private String avatar;
+
     @NotNull(message = "Gender is required")
     private Gender gender;
 }

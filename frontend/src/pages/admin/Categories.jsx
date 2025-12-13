@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { categoryService } from '../../services/adminService.js';
-import { 
-  Table, 
-  Button, 
-  Space, 
-  Modal, 
-  Form, 
-  Input, 
+import { categoryService } from '../../services/category.service.js';
+import {
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
   message,
   Popconfirm,
   Typography,
@@ -15,13 +15,14 @@ import {
   Image,
   Row,
   Col,
-  Select
+  Select,
+  Upload
 } from 'antd';
 
 const { Option } = Select;
-import { 
-  PlusOutlined, 
-  EditOutlined, 
+import {
+  PlusOutlined,
+  EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
 
@@ -30,6 +31,7 @@ const { Title } = Typography;
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [form] = Form.useForm();
@@ -78,13 +80,31 @@ const Categories = () => {
     }
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   const handleSubmit = async (values) => {
+    setSubmitLoading(true);
     try {
+      const formData = new FormData();
+
+      // Separate file from other values
+      const { image, ...categoryData } = values;
+
+      // Append category JSON
+      formData.append('category', JSON.stringify({
+        ...categoryData,
+        image: typeof image === 'string' ? image : undefined
+      }));
+
+      // Append file if present (normalized to fileList array)
+      if (image && image.length > 0 && image[0].originFileObj) {
+        formData.append('imageFile', image[0].originFileObj);
+      }
+
       if (editingCategory) {
-        await categoryService.update(editingCategory.id, values);
+        await categoryService.update(editingCategory.id, formData);
         message.success('Category updated successfully');
       } else {
-        await categoryService.create(values);
+        await categoryService.create(formData);
         message.success('Category created successfully');
       }
       setModalVisible(false);
@@ -92,6 +112,8 @@ const Categories = () => {
     } catch (error) {
       console.error('Failed to save category:', error);
       message.error('Failed to save category');
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -146,9 +168,9 @@ const Categories = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
             Edit
@@ -172,22 +194,22 @@ const Categories = () => {
   return (
     <div>
       <Card>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 16 
+          marginBottom: 16
         }}>
           <Title level={2} style={{ margin: 0 }}>Categories Management</Title>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={handleAdd}
           >
             Add Category
           </Button>
         </div>
-        
+
         <Table
           columns={columns}
           dataSource={categories}
@@ -244,41 +266,58 @@ const Categories = () => {
               </Form.Item>
             </Col>
           </Row>
-          
+
           <Form.Item
             name="description"
             label="Description"
             rules={[{ required: true, message: 'Please input description!' }]}
           >
-            <Input.TextArea 
-              rows={3} 
+            <Input.TextArea
+              rows={3}
               placeholder="Describe this category..."
               showCount
               maxLength={200}
             />
           </Form.Item>
-          
-          <Form.Item
-            name="image"
-            label="Category Image URL"
-            rules={[{ required: true, message: 'Please input image URL!' }]}
-          >
-            <Input placeholder="https://example.com/category-image.jpg" />
-          </Form.Item>
 
-          {form.getFieldValue('image') && (
-            <Form.Item label="Image Preview">
-              <Image
-                width={200}
-                height={120}
-                src={form.getFieldValue('image')}
-                alt="Category preview"
-                style={{ objectFit: 'cover', borderRadius: 8 }}
-                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsZqBg+IkQAi4eNcY2FQ+gfQO8nX3GwQcbgx1j+BmFUpA4nXwDxKzToYG4ib/2//9nYGBgO8T8//9+4///v4sB3d9vGjD8HwD3FgLefG8sYgAAAAlwSFlzAAALEgAACxIB0t1+/AAAADh0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggVGhlIEdJTVDvZCVuAAAADUlEQVQ4jWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg=="
-              />
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 24 }}>
+            <Form.Item
+              name="image"
+              label="Category Image"
+              valuePropName="fileList"
+              getValueFromEvent={(e) => {
+                if (Array.isArray(e)) return e;
+                return e && e.fileList;
+              }}
+              style={{ marginBottom: 0 }}
+            >
+              <Upload
+                listType="picture-card"
+                maxCount={1}
+                beforeUpload={() => false} // Prevent auto upload
+                accept="image/*"
+              >
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              </Upload>
             </Form.Item>
-          )}
-          
+
+            {editingCategory && editingCategory.image && (
+              <div style={{ textAlign: 'center', paddingTop: 30 }}>
+                <div style={{ marginBottom: 8, fontSize: 12 }}>Current:</div>
+                <Image
+                  width={80}
+                  height={80}
+                  src={editingCategory.image}
+                  alt="Current"
+                  style={{ objectFit: 'cover', borderRadius: 4 }}
+                />
+              </div>
+            )}
+          </div>
+
           <Form.Item
             name="status"
             label="Status"
@@ -290,20 +329,20 @@ const Categories = () => {
               <Option value="inactive">Inactive</Option>
             </Select>
           </Form.Item>
-          
+
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setModalVisible(false)}>
                 Cancel
               </Button>
-              <Button type="primary" htmlType="submit" size="large">
+              <Button type="primary" htmlType="submit" size="large" loading={submitLoading}>
                 {editingCategory ? 'Update Category' : 'Create Category'}
               </Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </div >
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import api from '../config/api.js';
+import { wishlistService } from '@/services/wishlist.service.js';
 import { useAuth } from './AuthContext.jsx';
 
 const WishlistContext = createContext();
@@ -19,7 +19,7 @@ export const WishlistProvider = ({ children }) => {
       return raw ? JSON.parse(raw) : [];
     } catch (e) {
       console.error('Failed to parse wishlist from localStorage', e);
-      try { localStorage.removeItem('wishlist'); } catch (_) {}
+      try { localStorage.removeItem('wishlist'); } catch (_) { }
       return [];
     }
   });
@@ -37,15 +37,13 @@ export const WishlistProvider = ({ children }) => {
     const hydrate = async () => {
       if (!user) return; // only for authenticated users
       try {
-        const resp = await api.get('/wishlist');
-        const data = resp.data?.data || resp.data || [];
+        const resp = await wishlistService.getMyWishlist();
+        const data = resp.data || [];
         if (!cancelled && Array.isArray(data)) {
-          // server returns WishlistItem with nested product — normalize to product shape
-          const products = data.map((it) => it.product || it);
-          setItems(products);
+          setItems(data);
         }
       } catch (e) {
-        console.warn('Failed to hydrate wishlist from server, keeping local copy', e);
+        console.warn('Failed to hydrate wishlist from server', e);
       }
     };
 
@@ -65,13 +63,12 @@ export const WishlistProvider = ({ children }) => {
         (async () => {
           try {
             if (!exists) {
-              await api.post(`/wishlist/${product.id}`);
+              await wishlistService.addToWishlist(product.id);
             } else {
-              await api.delete(`/wishlist/${product.id}`);
+              await wishlistService.removeFromWishlist(product.id);
             }
           } catch (e) {
-            console.warn('Wishlist sync failed, will keep local state', e);
-            // Optionally revert optimistic update on certain errors — keep simple for now
+            console.warn('Wishlist sync failed', e);
           }
         })();
       }
