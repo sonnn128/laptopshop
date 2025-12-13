@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 import { Layout, Menu, theme, Breadcrumb } from 'antd';
 import AdminHeader from './AdminHeader.jsx';
 import './AdminLayout.css';
-import { 
-  DashboardOutlined, 
-  ShoppingOutlined, 
-  UserOutlined, 
+import {
+  DashboardOutlined,
+  ShoppingOutlined,
+  UserOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
   TagsOutlined
@@ -65,7 +65,7 @@ const AdminLayout = ({ children }) => {
     const breadcrumbItems = [
       { title: 'Admin' }
     ];
-    
+
     if (pathSegments.length > 1) {
       const currentPage = pathSegments[1];
       const pageNames = {
@@ -76,21 +76,21 @@ const AdminLayout = ({ children }) => {
         users: 'Users',
         settings: 'Settings'
       };
-      
+
       if (pageNames[currentPage]) {
         breadcrumbItems.push({ title: pageNames[currentPage] });
       }
     }
-    
+
     return breadcrumbItems;
   };
 
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
+      <Sider
+        trigger={null}
+        collapsible
         collapsed={collapsed}
         breakpoint="lg"
         collapsedWidth={collapsed ? 0 : 200}
@@ -98,10 +98,10 @@ const AdminLayout = ({ children }) => {
           background: colorBgContainer,
         }}
       >
-        <div style={{ 
-          height: 40, 
-          margin: 16, 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        <div style={{
+          height: 40,
+          margin: 16,
+          background: theme.useToken().token.colorPrimary,
           borderRadius: 8,
           display: 'flex',
           alignItems: 'center',
@@ -120,9 +120,9 @@ const AdminLayout = ({ children }) => {
         />
       </Sider>
       <Layout>
-        <AdminHeader 
-          collapsed={collapsed} 
-          onToggleCollapse={() => setCollapsed(!collapsed)} 
+        <AdminHeader
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed(!collapsed)}
         />
         <Content
           style={{
@@ -134,7 +134,7 @@ const AdminLayout = ({ children }) => {
           }}
           className="admin-content"
         >
-          <Breadcrumb 
+          <Breadcrumb
             items={getBreadcrumbItems()}
             style={{ marginBottom: 16 }}
           />

@@ -22,7 +22,8 @@
 }
 
 .ant-layout-sider .ant-menu-item-selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1890ff; /* Fallback or use theme primary if possible via variable, but CSS here. Antd default blue is safe or handled by theme */
+  background-color: var(--ant-primary-color, #1890ff);
   color: white;
 }
 
@@ -31,7 +32,8 @@
 }
 
 .ant-layout-sider .ant-menu-item-selected:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: var(--ant-primary-color, #1890ff);
+  opacity: 0.9;
 }
 
 .ant-card {
@@ -64,12 +66,13 @@
 }
 
 .ant-btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Remove gradient override to let Ant Design theme handle it */
   border: none;
 }
 
 .ant-btn-primary:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  /* Remove gradient override */
+  opacity: 0.9;
 }
 
 .ant-modal-header {

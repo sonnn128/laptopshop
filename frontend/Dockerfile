@@ -4,6 +4,10 @@ FROM node:21.7.3 AS build
 #### make the 'app' folder the current working directory
 WORKDIR /app
 
+ARG VITE_API_BASE_URL
+
+# 🔴 EXPORT THÀNH ENV CHO VITE
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 #### copy both 'package.json' and 'package-lock.json' (if available)
 COPY package*.json ./
 

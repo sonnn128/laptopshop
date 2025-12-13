@@ -86,18 +86,31 @@ const Categories = () => {
     try {
       const formData = new FormData();
 
-      // Separate file from other values
-      const { image, ...categoryData } = values;
+      // Extract image file if exists
+      let imageFile = null;
+      if (values.imageFile && values.imageFile.length > 0) {
+        imageFile = values.imageFile[0].originFileObj;
+      }
+
+      const { imageFile: ignored, ...categoryInfo } = values;
+
+      // Prepare category data
+      const categoryData = {
+        ...categoryInfo,
+        image: undefined // Default to undefined
+      };
+
+      // If editing and no new file, keep existing image
+      if (editingCategory && !imageFile) {
+        categoryData.image = editingCategory.image;
+      }
 
       // Append category JSON
-      formData.append('category', JSON.stringify({
-        ...categoryData,
-        image: typeof image === 'string' ? image : undefined
-      }));
+      formData.append('category', JSON.stringify(categoryData));
 
-      // Append file if present (normalized to fileList array)
-      if (image && image.length > 0 && image[0].originFileObj) {
-        formData.append('imageFile', image[0].originFileObj);
+      // Append file if present
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
       }
 
       if (editingCategory) {
@@ -282,7 +295,7 @@ const Categories = () => {
 
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 24 }}>
             <Form.Item
-              name="image"
+              name="imageFile"
               label="Category Image"
               valuePropName="fileList"
               getValueFromEvent={(e) => {

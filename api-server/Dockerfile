@@ -13,4 +13,3 @@ EXPOSE 8888
 
 ENV JAVA_OPTIONS="-Xmx2048m -Xms256m"
 ENTRYPOINT ["java", "-jar", "/run/laptopshop-0.0.1-SNAPSHOT.jar"]
-

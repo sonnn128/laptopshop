@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, Badge, Dropdown, Avatar, Input } from 'antd';
+import React from 'react';
+import { Layout, Button, Dropdown, Avatar, Input, theme, Space, Badge } from 'antd';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  HomeOutlined,
   LaptopOutlined,
   ShoppingCartOutlined,
   UserOutlined,
@@ -11,7 +10,8 @@ import {
   SettingOutlined,
   ShoppingOutlined,
   DashboardOutlined,
-  BulbOutlined
+  BulbOutlined,
+  HeartOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
@@ -22,6 +22,7 @@ const { Header } = Layout;
 const Navbar = () => {
   const { user, logout, isAdmin } = useAuth();
   const { themeMode, setThemeMode } = useTheme();
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -81,122 +82,161 @@ const Navbar = () => {
     }
   ];
 
-  const menuItems = [
-    {
-      key: '/',
-      icon: <HomeOutlined />,
-      label: <Link to="/">Home</Link>
-    },
-    {
-      key: '/products',
-      icon: <LaptopOutlined />,
-      label: <Link to="/products">Products</Link>
-    }
-  ];
-
-  const getSelectedKeys = () => {
-    const path = location.pathname;
-    if (path.startsWith('/admin')) {
-      return [path];
-    }
-    return [path];
-  };
+  const isActive = (path) => location.pathname === path;
 
   return (
-    <Header style={{ position: 'fixed', zIndex: 1, width: '100%', display: 'flex', alignItems: 'center', padding: '0 24px', height: 64 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginRight: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <div style={{ width: 40, height: 40, background: themeMode !== 'light' ? '#303030' : 'white', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <LaptopOutlined style={{ color: '#1890ff', fontSize: 20 }} />
-          </div>
-          <div style={{ color: 'white', fontSize: '18px', fontWeight: '700' }}>Laptop Shop</div>
+    <Header
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+        height: 72, // Slightly taller for modern look
+        background: token.colorBgContainer,
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        boxShadow: themeMode === 'light' ? '0 2px 8px rgba(0,0,0,0.06)' : '0 2px 8px rgba(0,0,0,0.2)',
+        transition: 'all 0.3s ease'
+      }}
+    >
+      {/* 1. Logo Section */}
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', minWidth: 200 }}
+        onClick={() => navigate('/')}
+      >
+        <div style={{
+          width: 40,
+          height: 40,
+          background: token.colorPrimary,
+          borderRadius: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: `0 4px 10px ${token.colorPrimary}66`
+        }}>
+          <LaptopOutlined style={{ color: '#fff', fontSize: 22 }} />
+        </div>
+        <div style={{
+          fontSize: '20px',
+          fontWeight: '800',
+          color: token.colorPrimary,
+          letterSpacing: '-0.5px'
+        }}>
+          Laptop Shop
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', flex: '0 1 auto', minWidth: 0 }}>
-          <Menu
-            theme="dark"
-            mode="horizontal"
-            selectedKeys={getSelectedKeys()}
-            items={menuItems}
-            style={{ display: 'flex', gap: 8 }}
-          />
-        </div>
+      {/* 2. Navigation & Search Section */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 40 }}>
+        {/* Nav Links */}
+        <Space size="large" style={{ display: { xs: 'none', md: 'flex' } }}>
+          <Button
+            type="text"
+            onClick={() => navigate('/')}
+            style={{
+              fontWeight: isActive('/') ? 'bold' : 'normal',
+              color: isActive('/') ? token.colorPrimary : token.colorText
+            }}
+          >
+            Home
+          </Button>
+          <Button
+            type="text"
+            onClick={() => navigate('/products')}
+            style={{
+              fontWeight: isActive('/products') ? 'bold' : 'normal',
+              color: isActive('/products') ? token.colorPrimary : token.colorText
+            }}
+          >
+            Products
+          </Button>
+        </Space>
 
-        <div style={{ flex: '1 1 360px', minWidth: 160, maxWidth: 520, display: 'flex', alignItems: 'center' }}>
+        {/* Search Bar */}
+        <div style={{ width: '100%', maxWidth: 400 }}>
           <Input.Search
-            placeholder="Search products..."
+            placeholder="Search for laptops..."
             onSearch={(v) => navigate(`/products?search=${encodeURIComponent(v)}`)}
-            enterButton
-            size="middle"
-            style={{ width: '100%' }}
+            allowClear
+            size="large"
+            style={{
+              width: '100%',
+            }}
+            styles={{
+              input: { borderRadius: '20px 0 0 20px' },
+              button: { borderRadius: '0 20px 20px 0' }
+            }}
           />
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <Button type="text" onClick={() => navigate('/wishlist')} style={{ color: 'white' }}>
-          ❤️ Favorites
-        </Button>
-        <CartIcon />
+      {/* 3. Actions Section */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 200, justifyContent: 'flex-end' }}>
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<HeartOutlined />}
+            onClick={() => navigate('/wishlist')}
+            style={{ color: token.colorText }}
+            title="Favorites"
+          />
 
-        <Button
-          type="text"
-          icon={<BulbOutlined />}
-          style={{ color: 'white' }}
-          onClick={() => {
-            const nextMode = themeMode === 'light' ? 'dark' : (themeMode === 'dark' ? 'system' : 'light');
-            setThemeMode(nextMode);
-          }}
-          title={`Theme: ${themeMode}`}
-        />
+          <CartIcon />
+
+          <Button
+            type="text"
+            icon={<BulbOutlined />}
+            onClick={() => {
+              const nextMode = themeMode === 'light' ? 'dark' : (themeMode === 'dark' ? 'system' : 'light');
+              setThemeMode(nextMode);
+            }}
+            style={{ color: token.colorText }}
+            title={`Theme: ${themeMode}`}
+          />
+        </Space>
+
+        <div style={{ width: 1, height: 24, background: token.colorBorderSecondary, margin: '0 8px' }} />
 
         {user ? (
           <>
             {isAdmin() && (
-              <Dropdown
-                menu={{ items: adminMenuItems }}
-                placement="bottomRight"
-              >
-                <Button type="text" style={{ color: 'white' }}>
-                  <SettingOutlined /> Admin
+              <Dropdown menu={{ items: adminMenuItems }} placement="bottomRight">
+                <Button type="text" style={{ color: token.colorText }}>
+                  <SettingOutlined />
                 </Button>
               </Dropdown>
             )}
 
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-            >
-              <Avatar
-                style={{ backgroundColor: '#87d068', cursor: 'pointer' }}
-                icon={<UserOutlined />}
-              >
-                {user?.fullName?.charAt(0) || user?.username?.charAt(0)}
-              </Avatar>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'background 0.3s', ':hover': { background: token.colorFillTertiary } }}>
+                <Avatar
+                  style={{ backgroundColor: token.colorPrimary, verticalAlign: 'middle' }}
+                  icon={<UserOutlined />}
+                  src={user.avatar} // Assuming user object might have an avatar property
+                >
+                  {user?.fullName?.charAt(0) || user?.username?.charAt(0)}
+                </Avatar>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: token.colorText }}>{user.fullName || user.username}</span>
+                </div>
+              </div>
             </Dropdown>
           </>
         ) : (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Button
-              type="text"
-              icon={<LoginOutlined />}
-              style={{ color: 'white' }}
-              onClick={() => navigate('/login')}
-            >
+          <Space>
+            <Button type="text" onClick={() => navigate('/login')}>
               Login
             </Button>
-            <Button
-              type="primary"
-              onClick={() => navigate('/register')}
-            >
+            <Button type="primary" onClick={() => navigate('/register')}>
               Register
             </Button>
-          </div>
+          </Space>
         )}
       </div>
-    </Header >
+    </Header>
   );
 };
 

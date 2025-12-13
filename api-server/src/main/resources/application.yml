@@ -66,6 +66,21 @@ springdoc:
   show-actuator: true
   packages-to-scan: com.sonnguyen.base.controller
 
+# Spring Boot Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      simple:
+        enabled: true
+
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:dswdadh2n}
   api-key: ${CLOUDINARY_API_KEY:741574128814778}
