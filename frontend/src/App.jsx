@@ -33,6 +33,7 @@ import Users from '@/pages/admin/Users.jsx';
 import Orders from '@/pages/admin/Orders.jsx';
 import Categories from '@/pages/admin/Categories.jsx';
 import Settings from '@/pages/admin/Settings.jsx';
+import PermissionManagement from '@/pages/admin/PermissionManagement.jsx';
 
 const { Content, Footer } = Layout;
 import { theme } from 'antd';
@@ -161,6 +162,13 @@ const AppContent = () => {
               <ProtectedRoute requireAdmin={true}>
                 <AdminLayout>
                   <Settings />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/permissions" element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminLayout>
+                  <PermissionManagement />
                 </AdminLayout>
               </ProtectedRoute>
             } />

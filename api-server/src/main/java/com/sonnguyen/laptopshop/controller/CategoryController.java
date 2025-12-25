@@ -44,6 +44,13 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(category);
     }
 
+    @PostMapping(consumes = { org.springframework.http.MediaType.APPLICATION_JSON_VALUE })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CategoryResponse> createCategoryJson(@Valid @RequestBody CategoryRequest request) {
+        CategoryResponse category = categoryService.createCategory(request, null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(category);
+    }
+
     @PutMapping(value = "/{id}", consumes = { org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> updateCategory(
@@ -55,10 +62,24 @@ public class CategoryController {
         return ResponseEntity.ok(category);
     }
 
+    @PutMapping(value = "/{id}", consumes = { org.springframework.http.MediaType.APPLICATION_JSON_VALUE })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CategoryResponse> updateCategoryJson(
+            @PathVariable Long id, 
+            @Valid @RequestBody CategoryRequest request) {
+        CategoryResponse category = categoryService.updateCategory(id, request, null);
+        return ResponseEntity.ok(category);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<com.sonnguyen.laptopshop.payload.response.ApiResponse> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(
+                com.sonnguyen.laptopshop.payload.response.ApiResponse.builder()
+                        .success(true)
+                        .message("Category deleted successfully")
+                        .build()
+        );
     }
 }

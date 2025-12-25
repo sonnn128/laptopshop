@@ -62,6 +62,14 @@ public class AuthController {
                 return ResponseEntity.ok(ApiResponse.builder().success(true).message("Password changed").build());
         }
 
+        @PostMapping("/verify-otp")
+        public ResponseEntity<?> verifyOtp(@RequestBody java.util.Map<String, String> request) {
+            String otp = request.get("otp");
+            String username = request.get("username");
+            authService.verifyOtp(otp, username);
+            return ResponseEntity.ok(ApiResponse.builder().success(true).message("OTP verified").build());
+        }
+
         @PostMapping("/forgot-password")
         public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
                 authService.forgotPassword(request.getEmail());

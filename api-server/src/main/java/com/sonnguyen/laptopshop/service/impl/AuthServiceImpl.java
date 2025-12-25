@@ -150,38 +150,73 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void forgotPassword(String email) {
-        User user = userRepository.findByEmail(email);
+    public void forgotPassword(String emailOrUsername) {
+        User user = userRepository.findByEmail(emailOrUsername);
         if (user == null) {
-             user = userRepository.findByUsername(email);
+             user = userRepository.findByUsername(emailOrUsername);
         }
         if (user == null) {
-            throw new NotFoundException("User not found with email: " + email);
+            // To prevent username enumeration, we might want to return silently.
+            // But for this assignment/request, we throw generic error or proceed.
+            throw new NotFoundException("User not found with identifier: " + emailOrUsername);
         }
 
-        // Check if token already exists? Maybe invalidate old ones. 
-        // For simplicity, just create new one.
+        // Generate 6 digit OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(999999));
+
+        // Save OTP
+        // First delete existing valid tokens for this user? Or just add new one?
+        // Let's create new.
         PasswordResetToken prt = new PasswordResetToken();
-        prt.setToken(UUID.randomUUID().toString());
+        prt.setToken(otp); // Saving the raw OTP as the token
         prt.setUser(user);
-        prt.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 60 * 24)); // 24 hours
+        prt.setExpiresAt(Instant.now().plusMillis(1000L * 60 * 15)); // 15 minutes
         passwordResetTokenRepository.save(prt);
 
-        String link = "http://localhost:5173/reset-password?token=" + prt.getToken();
-        emailService.sendResetPasswordEmail(user.getEmail(), link);
+        // Send Email
+        emailService.sendResetPasswordEmail(user.getEmail(), otp);
+    }
+
+    @Override
+    public void verifyOtp(String otp, String username) {
+        // Find by token
+        PasswordResetToken prt = passwordResetTokenRepository.findByToken(otp)
+                .orElseThrow(() -> new CommonException("Invalid OTP", HttpStatus.BAD_REQUEST));
+        
+        // Verify user matches
+        if (!prt.getUser().getUsername().equals(username) && !prt.getUser().getEmail().equals(username)) {
+             // In case username param is username, check match.
+             // If username param is actually email (from FE state), check email.
+             // Simplest: Check if the token belongs to the user found by username.
+             User user = userRepository.findByUsername(username);
+             if (user == null) user = userRepository.findByEmail(username);
+             
+             if (user == null || !prt.getUser().getId().equals(user.getId())) {
+                 throw new CommonException("Invalid OTP for this user", HttpStatus.BAD_REQUEST);
+             }
+        }
+
+        if (prt.getExpiresAt().isBefore(Instant.now())) {
+            // passwordResetTokenRepository.delete(prt); // Maybe keep for logs? Or delete.
+            throw new CommonException("OTP expired", HttpStatus.BAD_REQUEST);
+        }
+        // Valid. Return. Frontend proceeds to next step.
     }
 
     @Override
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken prt = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new CommonException("Invalid password reset token", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new CommonException("Invalid OTP", HttpStatus.BAD_REQUEST));
+        
         if (prt.getExpiresAt().isBefore(Instant.now())) {
-            passwordResetTokenRepository.delete(prt);
-            throw new CommonException("Password reset token expired", HttpStatus.BAD_REQUEST);
+            throw new CommonException("OTP expired", HttpStatus.BAD_REQUEST);
         }
+        
         User user = prt.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        
+        // Consume the token
         passwordResetTokenRepository.delete(prt);
         // invalidate refresh tokens
         refreshTokenRepository.deleteAllByUser(user);

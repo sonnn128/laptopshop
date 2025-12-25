@@ -50,6 +50,11 @@ const AdminLayout = ({ children }) => {
       label: 'Users',
     },
     {
+      key: '/admin/permissions',
+      icon: <SettingOutlined style={{color: '#faad14'}} />, // dùng icon SettingOutlined, có thể thay bằng icon khác nếu muốn
+      label: 'Permissions',
+    },
+    {
       key: '/admin/settings',
       icon: <SettingOutlined />,
       label: 'Settings',
@@ -74,6 +79,7 @@ const AdminLayout = ({ children }) => {
         categories: 'Categories',
         orders: 'Orders',
         users: 'Users',
+        permissions: 'Permissions',
         settings: 'Settings'
       };
 

@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -65,6 +66,13 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(product);
     }
 
+    @PostMapping(consumes = { org.springframework.http.MediaType.APPLICATION_JSON_VALUE })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductResponse> createProductJson(@Valid @RequestBody ProductRequest productRequest) {
+        ProductResponse product = productService.createProduct(productRequest, null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(product);
+    }
+
     @PutMapping(value = "/{id}", consumes = { org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE })
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> updateProduct(
@@ -73,17 +81,37 @@ public class ProductController {
             @RequestPart(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) throws java.io.IOException {
         ProductRequest request = objectMapper.readValue(productStr, ProductRequest.class);
         return productService.updateProduct(id, request, imageFile)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping(value = "/{id}", consumes = { org.springframework.http.MediaType.APPLICATION_JSON_VALUE })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductResponse> updateProductJson(
+            @PathVariable Long id,
+            @Valid @RequestBody ProductRequest productRequest) {
+        return productService.updateProduct(id, productRequest, null)
                 .map(product -> ResponseEntity.ok(product))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<com.sonnguyen.laptopshop.payload.response.ApiResponse> deleteProduct(@PathVariable Long id) {
         if (productService.deleteProduct(id)) {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(
+                    com.sonnguyen.laptopshop.payload.response.ApiResponse.builder()
+                            .success(true)
+                            .message("Product deleted successfully")
+                            .build()
+            );
         }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                com.sonnguyen.laptopshop.payload.response.ApiResponse.builder()
+                        .success(false)
+                        .message("Product not found")
+                        .build()
+        );
     }
 
     @GetMapping("/search")

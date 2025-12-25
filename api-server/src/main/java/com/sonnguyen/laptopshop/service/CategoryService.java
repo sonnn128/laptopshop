@@ -98,10 +98,10 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new CommonException(CATEGORY_NOT_FOUND_BY_ID + id, HttpStatus.NOT_FOUND));
 
-        // Check if category has products
-        if (category.getProducts() != null && !category.getProducts().isEmpty()) {
-            throw new CommonException(CANNOT_DELETE_CATEGORY_WITH_PRODUCTS, HttpStatus.BAD_REQUEST);
-        }
+        // Check if category has products - REMOVED strictly to allow cascade delete as requested.
+        // if (category.getProducts() != null && !category.getProducts().isEmpty()) {
+        //    throw new CommonException(CANNOT_DELETE_CATEGORY_WITH_PRODUCTS, HttpStatus.BAD_REQUEST);
+        // }
 
         categoryRepository.delete(category);
     }

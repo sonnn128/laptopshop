@@ -23,13 +23,13 @@ public class EmailService {
     private String fromEmail;
 
     @Async
-    public void sendResetPasswordEmail(String to, String resetLink) {
+    public void sendResetPasswordEmail(String to, String otpCode) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
             
             Context context = new Context();
-            context.setVariable("resetLink", resetLink);
+            context.setVariable("otpCode", otpCode);
             String html = templateEngine.process("email/reset-password", context);
 
             helper.setFrom(fromEmail);
